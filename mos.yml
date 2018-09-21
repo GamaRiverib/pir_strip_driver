@@ -1,5 +1,5 @@
-author: mongoose-os
-description: DHT sensor usage example (C/C++)
+author: José Gamaliel Rivera Ibarra <jgrivera@novutek.com>
+description: Led Strip WS2812 Driver with PIR sensor
 version: 1.0
 
 libs_version: ${mos.version}
@@ -10,17 +10,62 @@ sources:
   - src
 filesystem:
   - fs
+config_schema:
+  - ["mqtt.server", "10.10.0.246:1883"]
+  - ["mqtt.enable", true]
+
+  - ["pins", "o", {title: "Pins configuration"}]
+  - ["pins.dht", "i", 4, {title: "DHT sensor pin"}]
+  - ["pins.pir", "i", 14, {title: "PIR sensor pin"}]
+  - ["pins.led", "i", 12, {title: "PIR led pin"}]
+  - ["pins.strip", "i", 0, {title: "Led Strip pin"}]
+
+  - ["app", "o", {title: "App custom settings"}]
+  - ["app.tele", "i", 10, {title: "Telemetry interval (seconds)"}]
+  - ["app.mode", "i", 0, {title: "Driver operational mode (0 - 4)"}]
+
+  - ["pir", "o", {title: "PIR motion sensor configuration"}]
+  - ["pir.indicator", "b", true, {title: "Pir led indicator"}]
+  - ["pir.threshold", "i", 150, {title: "Luminosity threshold"}]
+  - ["pir.keep", "i", 10, {title: "Time to keep turn on (seconds)"}]
+
+  - ["strip", "o", {title: "Led Strip WS2812 configuration"}]
+  - ["strip.pixels", "i", 12, {title: "Led Strip pixels"}]
+  - ["strip.color", "i", 0x881F78, {title: "Led Strip color"}]
+  - ["strip.brightness", "i", 100, {title: "Led Strip brightness"}]
+  - ["strip.effect", "i", 0, {title: "Led Strip effect"}]
+  - ["strip.speed", "s", "normal", {title: "Led Strip effect speed"}]
 libs:
-    # common mgos libs
+      # common mgos libs
   - origin: https://github.com/mongoose-os-libs/ca-bundle
   - origin: https://github.com/mongoose-os-libs/i2c
   - origin: https://github.com/mongoose-os-libs/rpc-service-config
   - origin: https://github.com/mongoose-os-libs/rpc-service-fs
   - origin: https://github.com/mongoose-os-libs/rpc-uart
   - origin: https://github.com/mongoose-os-libs/spi
+  - origin: https://github.com/mongoose-os-libs/adc
 
-    # libs necessary for the current app
+  - origin: https://github.com/mongoose-os-libs/http-server
+  - origin: https://github.com/mongoose-os-libs/ota-http-server
+  - origin: https://github.com/mongoose-os-libs/pwm
+  # - origin: https://github.com/mongoose-os-libs/rpc-loopback
+  - origin: https://github.com/mongoose-os-libs/rpc-mqtt
+  # - origin: https://github.com/mongoose-os-libs/rpc-service-gpio
+  # - origin: https://github.com/mongoose-os-libs/rpc-service-i2c
+  - origin: https://github.com/mongoose-os-libs/rpc-service-ota
+  - origin: https://github.com/mongoose-os-libs/rpc-service-wifi
+  - origin: https://github.com/mongoose-os-libs/vfs-dev-spi-flash
+  - origin: https://github.com/mongoose-os-libs/wifi
+  
+  # - origin: https://github.com/mongoose-os-libs/core
+  # - origin: https://github.com/mongoose-os-libs/dash
+  # - origin: https://github.com/mongoose-os-libs/shadow
+  # - origin: https://github.com/mongoose-os-libs/sntp
+
   - origin: https://github.com/mongoose-os-libs/dht
+  - origin: https://github.com/mongoose-os-libs/neopixel
+  # - origin: https://github.com/mongoose-os-libs/mjs
+  - origin: https://github.com/mongoose-os-libs/blynk
 
 tags:
   - c

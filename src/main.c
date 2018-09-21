@@ -17,23 +17,47 @@
 
 #include "mgos.h"
 #include "mgos_dht.h"
+#include "mgos_adc.h"
+#include "mgos_rpc.h"
 
 static struct mgos_dht *s_dht = NULL;
 
-static void dht_timer_cb(void *arg) {
-  float t = mgos_dht_get_temp(s_dht);
-  float h = mgos_dht_get_humidity(s_dht);
+static void dht_timer_cb(void *dht) {
+  int t = mgos_dht_get_temp(dht);
+  int h = mgos_dht_get_humidity(dht);
+  int l = mgos_adc_read(0);
 
   if (isnan(h) || isnan(t)) {
     LOG(LL_INFO, ("Failed to read data from sensor\n"));
     return;
   }
-  LOG(LL_INFO, ("Temperature: %f *C Humidity: %f %%\n", t, h));
-  (void) arg;
+  LOG(LL_INFO, ("\nTemperature: %d *C \nHumidity: %d %%\nLuminosity: %d lux", t, h, l));
+  (void) dht;
+}
+
+static void rpc_weather_cb(struct mg_rpc_request_info *ri, const char *args,
+                           const char *src, void *dht) {
+  int t = mgos_dht_get_temp(dht);
+  int h = mgos_dht_get_humidity(dht);
+  int l = mgos_adc_read(0);
+  if(isnan(h) || isnan(t)) {
+    mg_rpc_send_errorf(ri, -1, "{error: \"Failed to read data from sensor\"");
+  } else {
+    LOG(LL_INFO, ("\nTemperature: %d *C \nHumidity: %d %%\nLuminosity: %d lux", t, h, l));
+    mg_rpc_send_responsef(ri, "{temp:%d,hum:%d,lum:%d}", t, h, l);
+  }
+  (void) src;
+  (void) args;
 }
 
 enum mgos_app_init_result mgos_app_init(void) {
-  if ((s_dht = mgos_dht_create(16, DHT22)) == NULL) return MGOS_APP_INIT_ERROR;
-  mgos_set_timer(2000 /* ms */, true /* repeat */, dht_timer_cb, NULL);
+  
+  // Configure DHT sensor
+  s_dht = mgos_dht_create(mgos_sys_config_get_pins_dht(), DHT11);
+  mgos_set_timer(mgos_sys_config_get_app_tele() * 1000, true, dht_timer_cb, s_dht);
+
+  // Configure RPC interface
+  mgos_rpc_add_handler("Weather", rpc_weather_cb, s_dht);
+
   return MGOS_APP_INIT_SUCCESS;
 }
