@@ -19,6 +19,8 @@
 #include "mgos_dht.h"
 #include "mgos_adc.h"
 #include "mgos_rpc.h"
+#include "frozen.h"
+#include "mgos_mqtt.h"
 
 static struct mgos_dht *s_dht = NULL;
 
@@ -32,6 +34,9 @@ static void dht_timer_cb(void *dht) {
     return;
   }
   LOG(LL_INFO, ("\nTemperature: %d *C \nHumidity: %d %%\nLuminosity: %d lux", t, h, l));
+
+  mgos_mqtt_pubf("Weather", 1, false, "{temperature:%d, humidity:%d, luminosity:%d}", t, h, l);
+
   (void) dht;
 }
 
