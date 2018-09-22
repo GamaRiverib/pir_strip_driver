@@ -16,10 +16,11 @@
  */
 
 #include "mgos.h"
+#include "mgos_time.h"
+#include "mgos_gpio.h"
 #include "mgos_dht.h"
 #include "mgos_adc.h"
 #include "mgos_rpc.h"
-#include "frozen.h"
 #include "mgos_mqtt.h"
 
 static struct mgos_dht *s_dht = NULL;
@@ -35,9 +36,21 @@ static void dht_timer_cb(void *dht) {
   }
   LOG(LL_INFO, ("\nTemperature: %d *C \nHumidity: %d %%\nLuminosity: %d lux", t, h, l));
 
-  mgos_mqtt_pubf("Weather", 1, false, "{temperature:%d, humidity:%d, luminosity:%d}", t, h, l);
+  mgos_mqtt_pubf("Weather", 1, false, "{temp:%d,hum:%d,lum:%d,uptime:%f}", t, h, l, mgos_uptime());
 
   (void) dht;
+}
+
+static void pir_timer_cb(void *args) {
+  bool motion = mgos_gpio_read(mgos_sys_config_get_pins_pir());
+  if(mgos_sys_config_get_pir_indicator()) {
+    mgos_gpio_write(mgos_sys_config_get_pins_led(), motion);
+  }
+  if(motion) {
+    LOG(LL_INFO, ("[%f] Motion detected", mgos_uptime()));
+    // TODO: call motion handler
+  }
+  (void) args;
 }
 
 static void rpc_weather_cb(struct mg_rpc_request_info *ri, const char *args,
@@ -49,17 +62,22 @@ static void rpc_weather_cb(struct mg_rpc_request_info *ri, const char *args,
     mg_rpc_send_errorf(ri, -1, "{error: \"Failed to read data from sensor\"");
   } else {
     LOG(LL_INFO, ("\nTemperature: %d *C \nHumidity: %d %%\nLuminosity: %d lux", t, h, l));
-    mg_rpc_send_responsef(ri, "{temp:%d,hum:%d,lum:%d}", t, h, l);
+    mg_rpc_send_responsef(ri, "{temp:%d,hum:%d,lum:%d,uptime:%f}", t, h, l, mgos_uptime());
   }
   (void) src;
   (void) args;
 }
 
 enum mgos_app_init_result mgos_app_init(void) {
-  
+
   // Configure DHT sensor
   s_dht = mgos_dht_create(mgos_sys_config_get_pins_dht(), DHT11);
   mgos_set_timer(mgos_sys_config_get_app_tele() * 1000, true, dht_timer_cb, s_dht);
+
+  // Configure PIR sensor
+  mgos_gpio_set_mode(mgos_sys_config_get_pins_pir(), MGOS_GPIO_MODE_INPUT); // mgos_gpio_mode, return bool
+  mgos_gpio_set_mode(mgos_sys_config_get_pins_led(), MGOS_GPIO_MODE_OUTPUT);
+  mgos_set_timer(500, true, pir_timer_cb, NULL);
 
   // Configure RPC interface
   mgos_rpc_add_handler("Weather", rpc_weather_cb, s_dht);
