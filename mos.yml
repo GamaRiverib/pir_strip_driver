@@ -11,10 +11,12 @@ sources:
 filesystem:
   - fs
 config_schema:
-  - ["mqtt.server", "10.10.0.246:1883"]
+  # - ["mqtt.server", "10.10.0.246:1883"]
+  - ["mqtt.server", "192.168.0.120:1883"]
   - ["mqtt.enable", true]
 
   - ["pins", "o", {title: "Pins configuration"}]
+  - ["pins.bled", "i", 2, {title: "Built in led pin"}]
   - ["pins.dht", "i", 4, {title: "DHT sensor pin"}]
   - ["pins.pir", "i", 14, {title: "PIR sensor pin"}]
   - ["pins.led", "i", 12, {title: "PIR led pin"}]
