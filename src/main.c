@@ -172,12 +172,60 @@ static void cylon_effect() {
   mgos_neopixel_show(s_strip);
 }
 
+static int get_hex_color(int r, int g, int b) {
+  int h = 0x000000;
+  h |= r << 16;
+  h |= g << 8;
+  h |= b;
+  return h;
+}
+
+static int wheel(int p) {
+  p = 255 - p;
+  if (p < 85) {
+    return get_hex_color((255 - p * 3), 0, (p * 3));
+  }
+  if (p < 170) {
+    p = p - 85;
+    return get_hex_color(0, (p * 3), (255 - p * 3));
+  }
+  p = p - 170;
+  return get_hex_color((p * 3), (255 - p * 3), 0);
+}
+
 static void rainbow_effect() {
-  LOG(LL_INFO, ("rainbow effect"));
+  static int s_rainbow_effect_counter = 0;
+  if(s_rainbow_effect_counter < 256) {
+    int i = s_rainbow_effect_counter++;
+    int num_pixels = mgos_sys_config_get_strip_pixels();
+    mgos_neopixel_clear(s_strip);
+    for(int p = 0; p < num_pixels; p++) {
+      int color = wheel((p + i) & 255);
+      rgb_color c = get_rgb_color(color);
+      mgos_neopixel_set(s_strip, p, c.red, c.green, c.blue);
+    }
+    mgos_neopixel_show(s_strip);
+  } else {
+    s_rainbow_effect_counter = 0;
+  }
 }
 
 static void rainbow_cycle_effect() {
-  LOG(LL_INFO, ("rainbow cycle effect"));
+  static int s_rainbow_cycle_effect_counter = 0;
+  if(s_rainbow_cycle_effect_counter < 256 * 5) {
+    int i = s_rainbow_cycle_effect_counter++;
+    int num_pixels = mgos_sys_config_get_strip_pixels();
+    mgos_neopixel_clear(s_strip);
+    for(int p = 0; p < num_pixels; p++) {
+      int k = p * 256 / num_pixels;
+      int color = wheel((k + i) & 255);
+      rgb_color c = get_rgb_color(color);
+      mgos_neopixel_set(s_strip, p, c.red, c.green, c.blue);
+    }
+    mgos_neopixel_show(s_strip);
+  } else {
+    s_rainbow_cycle_effect_counter = 0;
+  }
 }
 
 static void start_effect() {
@@ -224,10 +272,12 @@ static void start_vigilance() {
   mgos_sys_config_set_app_mode(MODE_VIGILANCE);
 }
 
+/*
 static void bled_timer_cb(void *args) {
   mgos_gpio_toggle(mgos_sys_config_get_pins_bled());
   (void) args;
 }
+*/
 
 static void dht_timer_cb(void *dht) {
   float t = mgos_dht_get_temp(dht);
@@ -413,8 +463,8 @@ static void rpc_set_vigilance_cb(struct mg_rpc_request_info *ri, const char *arg
 enum mgos_app_init_result mgos_app_init(void) {
 
   // Configure Built in LED
-  mgos_gpio_set_mode(mgos_sys_config_get_pins_bled(), MGOS_GPIO_MODE_OUTPUT);
-  mgos_set_timer(1000, MGOS_TIMER_REPEAT, bled_timer_cb, NULL);
+  /* mgos_gpio_set_mode(mgos_sys_config_get_pins_bled(), MGOS_GPIO_MODE_OUTPUT);
+  mgos_set_timer(1000, MGOS_TIMER_REPEAT, bled_timer_cb, NULL); */
 
   // Configure DHT sensor
   s_dht = mgos_dht_create(mgos_sys_config_get_pins_dht(), DHT11);
