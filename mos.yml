@@ -12,7 +12,7 @@ filesystem:
   - fs
 config_schema:
   # - ["mqtt.server", "10.10.0.246:1883"]
-  - ["mqtt.server", "192.168.0.120:1883"]
+  - ["mqtt.server", "192.168.0.117:1883"]
   - ["mqtt.enable", true]
 
   - ["pins", "o", {title: "Pins configuration"}]
@@ -23,7 +23,7 @@ config_schema:
   - ["pins.strip", "i", 0, {title: "Led Strip pin"}]
 
   - ["app", "o", {title: "App custom settings"}]
-  - ["app.tele", "i", 10, {title: "Telemetry interval (seconds)"}]
+  - ["app.tele", "i", 60, {title: "Telemetry interval (seconds)"}]
   - ["app.mode", "i", 0, {title: "Driver operational mode (0 - 4)"}]
 
   - ["pir", "o", {title: "PIR motion sensor configuration"}]

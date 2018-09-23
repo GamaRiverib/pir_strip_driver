@@ -23,23 +23,83 @@
 #include "mgos_adc.h"
 #include "mgos_rpc.h"
 #include "mgos_mqtt.h"
+#include "mgos_neopixel.h"
+
+#define ORDER MGOS_NEOPIXEL_ORDER_GRB
+#define CYLON_SIZE 1
+#define TOTAL_EFFECTS 5
+
+#define MODE_OFF 0
+#define MODE_ON 1
+#define MODE_EFFECT 2
+#define MODE_NIGHT 3
+#define MODE_VIGILANCE 4
+
+typedef struct {
+  int red;
+  int green;
+  int blue;
+} rgb_color;
 
 static struct mgos_dht *s_dht = NULL;
-// static mgos_timer_id effect_timer = MGOS_INVALID_TIMER_ID;
+static struct mgos_neopixel *s_strip = NULL;
+
+static mgos_timer_id effect_timer = MGOS_INVALID_TIMER_ID;
 static mgos_timer_id smooth_timer = MGOS_INVALID_TIMER_ID;
 static float last_motion_time = 0;
 static int smooth_brightness = 0;
 
+const char WEATHER_JSON_FMT[] = "{temperature:%d,humidity:%d,luminosity:%d,uptime:%f}";
+
 // TODO: static void get_weather(char *)
 
-/*
-static void clear_effect_timer() {
+static rgb_color get_rgb_color(int color) {
+  rgb_color rgb = { 
+    (color >> 16) & 0xFF, 
+    (color >> 8) & 0xFF,
+    color & 0xFF };
+  return rgb;
+}
+
+static void clear_timers() {
   if(effect_timer != MGOS_INVALID_TIMER_ID) {
     mgos_clear_timer(effect_timer);
     effect_timer = MGOS_INVALID_TIMER_ID;
   }
+  if(smooth_timer != MGOS_INVALID_TIMER_ID) {
+    mgos_clear_timer(smooth_timer);
+    smooth_timer = MGOS_INVALID_TIMER_ID;
+  }
 }
-*/
+
+static void strip_turn_off() {
+  clear_timers();
+  mgos_neopixel_clear(s_strip);
+  int num_pixels = mgos_sys_config_get_strip_pixels();
+  for(int p = 0; p < num_pixels; p++) {
+    mgos_neopixel_set(s_strip, p, 0, 0, 0);
+  }
+  mgos_neopixel_show(s_strip);
+  mgos_sys_config_set_app_mode(MODE_OFF);
+  LOG(LL_INFO, ("Led Strip Turn OFF"));
+}
+
+static void strip_turn_on() {
+  clear_timers();
+  int color = mgos_sys_config_get_strip_color();
+  if(color == 0) {
+    color = 0xFFFFFF;
+  }
+  rgb_color c = get_rgb_color(color);
+  mgos_neopixel_clear(s_strip);
+  int num_pixels = mgos_sys_config_get_strip_pixels();
+  for(int p = 0; p < num_pixels; p++) {
+    mgos_neopixel_set(s_strip, p, c.red, c.green, c.blue);
+  }
+  mgos_neopixel_show(s_strip);
+  mgos_sys_config_set_app_mode(MODE_ON);
+  LOG(LL_INFO, ("Led Strip Turn ON"));
+}
 
 static int get_luminosity() {
   if(mgos_adc_enable(0)) {
@@ -51,6 +111,117 @@ static int get_luminosity() {
 
 static bool is_dark() {
   return get_luminosity() <= mgos_sys_config_get_pir_threshold();
+}
+
+static void first_effect() {
+  static int s_first_effect_counter = 0;
+  int num_pixels = mgos_sys_config_get_strip_pixels();
+  int p = (s_first_effect_counter++) % num_pixels;
+  int r = s_first_effect_counter % 255;
+  int g = (s_first_effect_counter * 2) % 255;
+  int b = (s_first_effect_counter * s_first_effect_counter) % 255;
+  mgos_neopixel_clear(s_strip);
+  mgos_neopixel_set(s_strip, p, r, g, b);
+  mgos_neopixel_show(s_strip);
+}
+
+static void strobe_effect() {
+  static bool s_strobe_effect_state = true;
+  int num_pixels = mgos_sys_config_get_strip_pixels();
+  int color = mgos_sys_config_get_strip_color();
+  rgb_color c = get_rgb_color(color);
+  mgos_neopixel_clear(s_strip);
+  int p = 0;
+  if(s_strobe_effect_state) {
+    for(; p < num_pixels; p++) {
+      mgos_neopixel_set(s_strip, p, c.red, c.green, c.blue);
+    }
+    s_strobe_effect_state = false;
+  } else {
+    for(;p < num_pixels; p++) {
+      mgos_neopixel_set(s_strip, p, 0, 0, 0);
+    }
+    s_strobe_effect_state = true;
+  }
+  mgos_neopixel_show(s_strip);
+}
+
+static void cylon_effect() {
+  static bool s_cylon_effect_dir = true;
+  static int s_cylon_effect_counter = 0;
+  int num_pixels = mgos_sys_config_get_strip_pixels();
+  int color = mgos_sys_config_get_strip_color();
+  rgb_color c = get_rgb_color(color);
+  mgos_neopixel_clear(s_strip);
+  int p = s_cylon_effect_counter;
+  if(s_cylon_effect_dir) {
+    s_cylon_effect_counter++;
+    s_cylon_effect_dir = p < (num_pixels - CYLON_SIZE - 3); // TODO: 2?
+  } else {
+    s_cylon_effect_counter--;
+    s_cylon_effect_dir = p <= 1;
+  }
+  for(int i = 0; i < num_pixels; i++) {
+    mgos_neopixel_set(s_strip, i, 0, 0, 0);
+  }
+  mgos_neopixel_set(s_strip, p, c.red / 10, c.green / 10, c.blue / 10);
+  for(int i = 1; i <= CYLON_SIZE; i++) {
+    mgos_neopixel_set(s_strip, p + i, c.red, c.green, c.blue);
+  }
+  mgos_neopixel_set(s_strip, p + CYLON_SIZE + 1, c.red / 10, c.green / 10, c.blue / 10);
+  mgos_neopixel_show(s_strip);
+}
+
+static void rainbow_effect() {
+  LOG(LL_INFO, ("rainbow effect"));
+}
+
+static void rainbow_cycle_effect() {
+  LOG(LL_INFO, ("rainbow cycle effect"));
+}
+
+static void start_effect() {
+  clear_timers();
+  int effect = mgos_sys_config_get_strip_effect();
+  int speed = 200; // TODO: config speed
+  switch(effect) {
+    case 0:
+      effect_timer = mgos_set_timer(speed, MGOS_TIMER_REPEAT, first_effect, NULL);
+      LOG(LL_INFO, ("Starting first effect..."));
+      break;
+    case 1:
+      effect_timer = mgos_set_timer(speed, MGOS_TIMER_REPEAT, strobe_effect, NULL);
+      LOG(LL_INFO, ("Starting strobe effect..."));
+      break;
+    case 2:
+      effect_timer = mgos_set_timer(speed, MGOS_TIMER_REPEAT, cylon_effect, NULL);
+      LOG(LL_INFO, ("Starting cylon effect..."));
+      break;
+    case 3:
+      effect_timer = mgos_set_timer(speed, MGOS_TIMER_REPEAT, rainbow_effect, NULL);
+      LOG(LL_INFO, ("Starting rainbow effect..."));
+      break;
+    case 4:
+      effect_timer = mgos_set_timer(speed, MGOS_TIMER_REPEAT, rainbow_cycle_effect, NULL);
+      LOG(LL_INFO, ("Starting rainbow cycle effect..."));
+      break;
+    default:
+      LOG(LL_INFO, ("Bad effect: %d", effect));
+      strip_turn_off();
+  }
+}
+
+static void start_night_light() {
+  clear_timers();
+  mgos_sys_config_set_app_mode(MODE_NIGHT);
+  LOG(LL_INFO, ("Starting night light"));
+}
+
+static void start_vigilance() {
+  clear_timers();
+  int speed = 200; // TODO
+  effect_timer = mgos_set_timer(speed, MGOS_TIMER_REPEAT, cylon_effect, NULL);
+  mgos_sys_config_set_app_mode(MODE_VIGILANCE);
 }
 
 static void bled_timer_cb(void *args) {
@@ -69,13 +240,19 @@ static void dht_timer_cb(void *dht) {
   }
   LOG(LL_INFO, ("\nTemperature: %d *C \nHumidity: %d %%\nLuminosity: %d lux", (int)t, (int)h, l));
 
-  mgos_mqtt_pubf("Weather", 1, false, "{temp:%d,hum:%d,lum:%d,uptime:%f}", (int)t, (int)h, l, mgos_uptime());
+  mgos_mqtt_pubf("Weather", 1, false, WEATHER_JSON_FMT, (int)t, (int)h, l, mgos_uptime());
 
   (void) dht;
 }
 
 static void led_strip_brightness(int brightness) {
   LOG(LL_INFO, ("Set Led Strip Brightness: %d", brightness));
+  mgos_neopixel_clear(s_strip);
+  int num_pixels = mgos_sys_config_get_strip_pixels();
+  for(int p = 0; p < num_pixels; p++) {
+    mgos_neopixel_set(s_strip, p, brightness, brightness, brightness);
+  }
+  mgos_neopixel_show(s_strip);
 }
 
 static void smooth_turn_off() {
@@ -87,12 +264,10 @@ static void smooth_turn_off() {
       mgos_clear_timer(smooth_timer);
       smooth_timer = MGOS_INVALID_TIMER_ID;
     }
-    // TODO: turn_off
   }
 }
 
 static void check_last_motion_time() {
-  LOG(LL_INFO, ("Check last motion time"));
   int diff = mgos_uptime() - last_motion_time;
   if (diff < mgos_sys_config_get_pir_keep()) {
     int wait = mgos_sys_config_get_pir_keep() - diff;
@@ -101,12 +276,11 @@ static void check_last_motion_time() {
     if(smooth_timer != MGOS_INVALID_TIMER_ID) {
       mgos_clear_timer(smooth_timer);
     }
-    smooth_timer = mgos_set_timer(1000, true, smooth_turn_off, NULL);
+    smooth_timer = mgos_set_timer(1000, MGOS_TIMER_REPEAT, smooth_turn_off, NULL);
   }
 }
 
 static void smooth_turn_on() {
-  LOG(LL_INFO, ("Smooth turn ON"));
   smooth_brightness += 50;
   if(smooth_brightness <= 250) {
     led_strip_brightness(smooth_brightness);
@@ -116,23 +290,27 @@ static void smooth_turn_on() {
       smooth_timer = MGOS_INVALID_TIMER_ID;
     }
     int wait = mgos_sys_config_get_pir_keep() * 1000;
-    smooth_timer = mgos_set_timer(wait, true, check_last_motion_time, NULL);
+    smooth_timer = mgos_set_timer(wait, MGOS_TIMER_REPEAT, check_last_motion_time, NULL);
   }
 }
 
 static void motion_handler() {
-  last_motion_time = mgos_uptime();
-  switch(mgos_sys_config_get_app_mode()) {
-    case 3:
-      if(is_dark() && smooth_timer == MGOS_INVALID_TIMER_ID) {
-        smooth_timer = mgos_set_timer(1000, true, smooth_turn_on, NULL);
-      }
-      break;
-    case 4:
-      LOG(LL_INFO, ("ALERT"));
-      break;
-    default:
-      LOG(LL_INFO, ("Ignore motion"));
+  if (mgos_uptime() - last_motion_time > 4) {
+    last_motion_time = mgos_uptime();
+    LOG(LL_INFO, ("[%f] Motion detected", last_motion_time));
+    switch(mgos_sys_config_get_app_mode()) {
+      case MODE_NIGHT:
+        if(is_dark() && smooth_timer == MGOS_INVALID_TIMER_ID) {
+          smooth_turn_on();
+          smooth_timer = mgos_set_timer(1000, MGOS_TIMER_REPEAT, smooth_turn_on, NULL);
+        }
+        break;
+      case MODE_VIGILANCE:
+        LOG(LL_INFO, ("ALERT"));
+        break;
+      default:
+        LOG(LL_INFO, ("Ignore motion"));
+    }
   }
 }
 
@@ -142,7 +320,6 @@ static void pir_timer_cb(void *args) {
     mgos_gpio_write(mgos_sys_config_get_pins_led(), motion);
   }
   if(motion) {
-    LOG(LL_INFO, ("[%f] Motion detected", mgos_uptime()));
     motion_handler();
   }
   (void) args;
@@ -154,32 +331,136 @@ static void rpc_weather_cb(struct mg_rpc_request_info *ri, const char *args,
   float h = mgos_dht_get_humidity(dht);
   int l = get_luminosity();
   if(isnan(h) || isnan(t)) {
-    mg_rpc_send_errorf(ri, -1, "{error: \"Failed to read data from sensor\"");
+    mg_rpc_send_errorf(ri, -1, "{error: \"Failed to read data from sensor\"}");
   } else {
     LOG(LL_INFO, ("\nTemperature: %d *C \nHumidity: %d %%\nLuminosity: %d lux", (int)t, (int)h, l));
-    mg_rpc_send_responsef(ri, "{temp:%d,hum:%d,lum:%d,uptime:%f}", (int)t, (int)h, l, mgos_uptime());
+    mgos_mqtt_pubf("Weather", 1, false, WEATHER_JSON_FMT, (int)t, (int)h, l, mgos_uptime());
+    mg_rpc_send_responsef(ri, WEATHER_JSON_FMT, (int)t, (int)h, l, mgos_uptime());
+  }
+  (void) args;
+  (void) src;
+}
+
+static void rpc_turn_on_cb(struct mg_rpc_request_info *ri, const char *args,
+                           const char *src, void *user_data) {
+  strip_turn_on();
+  mg_rpc_send_responsef(ri, "{success:true}");
+  (void) args;
+  (void) src;
+  (void) user_data;
+}
+
+static void rpc_turn_off_cb(struct mg_rpc_request_info *ri, const char *args,
+                           const char *src, void *user_data) {
+  strip_turn_off();
+  mg_rpc_send_responsef(ri, "{success:true}");
+  (void) args;
+  (void) src;
+  (void) user_data;
+}
+
+static void rpc_set_effect_cb(struct mg_rpc_request_info *ri, const char *args,
+                           const char *src, void *user_data) {
+  int e = 0;
+  LOG(LL_INFO, (args));
+  if(json_scanf(args, strlen(args), ri->args_fmt, &e) == 1) {
+    mgos_sys_config_set_strip_effect(e);
+    mgos_sys_config_set_app_mode(MODE_EFFECT);
+    start_effect();
+    mg_rpc_send_responsef(ri, "{success:true, effect:%d}", e);
+  } else {
+    mg_rpc_send_errorf(ri, -1, "{success:false, message:\"Missing parameter\"}");
+    LOG(LL_INFO, ("Bad parameter: %s", args));
   }
   (void) src;
+  (void) user_data;
+}
+
+static void rpc_set_next_effect_cb(struct mg_rpc_request_info *ri, const char *args,
+                           const char *src, void *user_data) {
+  int e = mgos_sys_config_get_strip_effect();
+  e++;
+  if (e >= TOTAL_EFFECTS) {
+    e = 0;
+  }
+  mgos_sys_config_set_strip_effect(e);
+  mgos_sys_config_set_app_mode(MODE_EFFECT);
+  start_effect();
+  mg_rpc_send_responsef(ri, "{success:true, effect:%d}", e);
   (void) args;
+  (void) src;
+  (void) user_data;
+}
+
+static void rpc_set_night_light_cb(struct mg_rpc_request_info *ri, const char *args,
+                           const char *src, void *user_data) {
+  start_night_light();
+  mg_rpc_send_responsef(ri, "{success:true}");
+  (void) args;
+  (void) src;
+  (void) user_data;
+}
+
+static void rpc_set_vigilance_cb(struct mg_rpc_request_info *ri, const char *args,
+                           const char *src, void *user_data) {
+  start_vigilance();
+  mg_rpc_send_responsef(ri, "{success:true}");
+  (void) args;
+  (void) src;
+  (void) user_data;
 }
 
 enum mgos_app_init_result mgos_app_init(void) {
 
   // Configure Built in LED
   mgos_gpio_set_mode(mgos_sys_config_get_pins_bled(), MGOS_GPIO_MODE_OUTPUT);
-  mgos_set_timer(1000, true, bled_timer_cb, NULL);
+  mgos_set_timer(1000, MGOS_TIMER_REPEAT, bled_timer_cb, NULL);
 
   // Configure DHT sensor
   s_dht = mgos_dht_create(mgos_sys_config_get_pins_dht(), DHT11);
-  mgos_set_timer(mgos_sys_config_get_app_tele() * 1000, true, dht_timer_cb, s_dht);
+  mgos_set_timer(mgos_sys_config_get_app_tele() * 1000, MGOS_TIMER_REPEAT, dht_timer_cb, s_dht);
 
   // Configure PIR sensor
   mgos_gpio_set_mode(mgos_sys_config_get_pins_pir(), MGOS_GPIO_MODE_INPUT); // return bool
   mgos_gpio_set_mode(mgos_sys_config_get_pins_led(), MGOS_GPIO_MODE_OUTPUT);
-  mgos_set_timer(500, true, pir_timer_cb, NULL);
+  mgos_set_timer(500, MGOS_TIMER_REPEAT, pir_timer_cb, NULL);
+
+  // Configure Led Strip WS2812
+  int num_pixels = mgos_sys_config_get_strip_pixels();
+  s_strip = mgos_neopixel_create(mgos_sys_config_get_pins_strip(), num_pixels, ORDER);
+  // mgos_set_timer(150, MGOS_TIMER_REPEAT, strip_timer_cb, s_strip);
 
   // Configure RPC interface
-  mgos_rpc_add_handler("Driver.GetWeather", rpc_weather_cb, s_dht);
+  mgos_rpc_add_handler("Driver.Weather", rpc_weather_cb, s_dht);
+  mgos_rpc_add_handler("Driver.TurnOn", rpc_turn_on_cb, NULL);
+  mgos_rpc_add_handler("Driver.TurnOff", rpc_turn_off_cb, NULL);
+  mgos_rpc_add_handler("Driver.Effect", rpc_set_effect_cb, NULL);
+  mgos_rpc_add_handler("Driver.NextEffect", rpc_set_next_effect_cb, NULL);
+  mgos_rpc_add_handler("Driver.Night", rpc_set_night_light_cb, NULL);
+  mgos_rpc_add_handler("Driver.Vigilance", rpc_set_vigilance_cb, NULL);
+
+  int mode = mgos_sys_config_get_app_mode();
+  switch(mode) {
+    case MODE_OFF:
+      strip_turn_off();
+      break;
+    case MODE_ON:
+      strip_turn_on();
+      break;
+    case MODE_EFFECT: 
+      start_effect();
+      break;
+    case MODE_NIGHT:
+      start_night_light();
+      break;
+    case MODE_VIGILANCE:
+      start_vigilance();
+      break;
+    default:
+      LOG(LL_INFO, ("Bad mode %d", mode));
+      mgos_sys_config_set_app_mode(0);
+      // TODO: Save config and reboot
+  }
 
   return MGOS_APP_INIT_SUCCESS;
 }
