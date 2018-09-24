@@ -16,7 +16,7 @@ config_schema:
   - ["mqtt.enable", true]
 
   - ["pins", "o", {title: "Pins configuration"}]
-  # - ["pins.bled", "i", 2, {title: "Built in led pin"}]
+  - ["pins.bled", "i", 0, {title: "Built in led pin"}]
   - ["pins.dht", "i", 13, {title: "DHT sensor pin"}]
   - ["pins.pir", "i", 14, {title: "PIR sensor pin"}]
   - ["pins.led", "i", 12, {title: "PIR led pin"}]

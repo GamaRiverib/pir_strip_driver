@@ -46,10 +46,12 @@ static struct mgos_neopixel *s_strip = NULL;
 
 static mgos_timer_id effect_timer = MGOS_INVALID_TIMER_ID;
 static mgos_timer_id smooth_timer = MGOS_INVALID_TIMER_ID;
+static mgos_timer_id alert_timer = MGOS_INVALID_TIMER_ID;
 static float last_motion_time = 0;
 static int smooth_brightness = 0;
 
 const char WEATHER_JSON_FMT[] = "{temperature:%d,humidity:%d,luminosity:%d,uptime:%f}";
+const char MOTION_ALERT_JSON_FMT[] = "{uptime:%f}";
 
 // TODO: static void get_weather(char *)
 
@@ -69,6 +71,10 @@ static void clear_timers() {
   if(smooth_timer != MGOS_INVALID_TIMER_ID) {
     mgos_clear_timer(smooth_timer);
     smooth_timer = MGOS_INVALID_TIMER_ID;
+  }
+  if(alert_timer != MGOS_INVALID_TIMER_ID) {
+    mgos_clear_timer(alert_timer);
+    alert_timer = MGOS_INVALID_TIMER_ID;
   }
 }
 
@@ -261,6 +267,12 @@ static void start_effect() {
 
 static void start_night_light() {
   clear_timers();
+  mgos_neopixel_clear(s_strip);
+  int num_pixels = mgos_sys_config_get_strip_pixels();
+  for(int p = 0; p < num_pixels; p++) {
+    mgos_neopixel_set(s_strip, p, 0, 0, 0);
+  }
+  mgos_neopixel_show(s_strip);
   mgos_sys_config_set_app_mode(MODE_NIGHT);
   LOG(LL_INFO, ("Starting night light"));
 }
@@ -310,10 +322,9 @@ static void smooth_turn_off() {
   if(smooth_brightness > 0) {
     led_strip_brightness(smooth_brightness);
   } else {
-    if(smooth_timer != MGOS_INVALID_TIMER_ID) {
-      mgos_clear_timer(smooth_timer);
-      smooth_timer = MGOS_INVALID_TIMER_ID;
-    }
+    smooth_brightness = 0;
+    led_strip_brightness(0);
+    clear_timers();
   }
 }
 
@@ -323,9 +334,7 @@ static void check_last_motion_time() {
     int wait = mgos_sys_config_get_pir_keep() - diff;
     mgos_set_timer(wait, false, check_last_motion_time, NULL);
   } else {
-    if(smooth_timer != MGOS_INVALID_TIMER_ID) {
-      mgos_clear_timer(smooth_timer);
-    }
+    clear_timers();
     smooth_timer = mgos_set_timer(1000, MGOS_TIMER_REPEAT, smooth_turn_off, NULL);
   }
 }
@@ -335,12 +344,11 @@ static void smooth_turn_on() {
   if(smooth_brightness <= 250) {
     led_strip_brightness(smooth_brightness);
   } else {
-    if (smooth_timer != MGOS_INVALID_TIMER_ID) {
-      mgos_clear_timer(smooth_timer);
-      smooth_timer = MGOS_INVALID_TIMER_ID;
-    }
+    smooth_brightness = 250;
+    led_strip_brightness(255);
+    clear_timers();
     int wait = mgos_sys_config_get_pir_keep() * 1000;
-    smooth_timer = mgos_set_timer(wait, MGOS_TIMER_REPEAT, check_last_motion_time, NULL);
+    mgos_set_timer(wait, false, check_last_motion_time, NULL);
   }
 }
 
@@ -357,6 +365,12 @@ static void motion_handler() {
         break;
       case MODE_VIGILANCE:
         LOG(LL_INFO, ("ALERT"));
+        if(alert_timer == MGOS_INVALID_TIMER_ID) {
+          clear_timers();
+          effect_timer = mgos_set_timer(100, MGOS_TIMER_REPEAT, strobe_effect, NULL);
+          alert_timer = mgos_set_timer(15000, false, start_vigilance, NULL);
+          mgos_mqtt_pubf("alert/motion", 1, false, MOTION_ALERT_JSON_FMT, mgos_uptime());
+        }
         break;
       default:
         LOG(LL_INFO, ("Ignore motion"));
