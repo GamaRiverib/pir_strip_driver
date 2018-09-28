@@ -496,10 +496,10 @@ enum mgos_app_init_result mgos_app_init(void) {
 
   // Configure RPC interface
   mgos_rpc_add_handler("Driver.Weather", rpc_weather_cb, s_dht);
-  mgos_rpc_add_handler("Driver.TurnOn", rpc_turn_on_cb, NULL);
-  mgos_rpc_add_handler("Driver.TurnOff", rpc_turn_off_cb, NULL);
+  mgos_rpc_add_handler("Driver.On", rpc_turn_on_cb, NULL);
+  mgos_rpc_add_handler("Driver.Off", rpc_turn_off_cb, NULL);
   mgos_rpc_add_handler("Driver.Effect", rpc_set_effect_cb, NULL);
-  mgos_rpc_add_handler("Driver.NextEffect", rpc_set_next_effect_cb, NULL);
+  mgos_rpc_add_handler("Driver.Next", rpc_set_next_effect_cb, NULL);
   mgos_rpc_add_handler("Driver.Night", rpc_set_night_light_cb, NULL);
   mgos_rpc_add_handler("Driver.Vigilance", rpc_set_vigilance_cb, NULL);
 

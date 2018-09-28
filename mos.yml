@@ -11,9 +11,16 @@ sources:
 filesystem:
   - fs
 config_schema:
-  # - ["mqtt.server", "10.10.0.246:1883"]
-  - ["mqtt.server", "192.168.0.117:1883"]
+  - ["mqtt.server", "10.10.0.246:1883"]
+  # - ["mqtt.server", "192.168.0.117:1883"]
   - ["mqtt.enable", true]
+
+  - ["sntp", "o", {title: "SNTP settings"}]
+  - ["sntp.enable", "b", true, {title: "Enable SNTP"}]
+  - ["sntp.server", "s", "time.google.com", {title: "Server address"}]
+  - ["sntp.retry_min", "i", 1, {title: "Minimum retry interval"}]
+  - ["sntp.retry_max", "i", 30, {title: "Maximum retry interval"}]
+  - ["sntp.update_interval", "i", 7200, {title: "Update interval. If 0, performs a one-off sync"}]
 
   - ["pins", "o", {title: "Pins configuration"}]
   - ["pins.bled", "i", 0, {title: "Built in led pin"}]
@@ -32,7 +39,7 @@ config_schema:
   - ["pir.keep", "i", 10, {title: "Time to keep turn on (seconds)"}]
 
   - ["strip", "o", {title: "Led Strip WS2812 configuration"}]
-  - ["strip.pixels", "i", 30, {title: "Led Strip pixels"}]
+  - ["strip.pixels", "i", 12, {title: "Led Strip pixels"}]
   - ["strip.color", "i", 0x881F78, {title: "Led Strip color"}]
   - ["strip.brightness", "i", 100, {title: "Led Strip brightness"}]
   - ["strip.effect", "i", 0, {title: "Led Strip effect"}]
@@ -68,6 +75,9 @@ libs:
   - origin: https://github.com/mongoose-os-libs/neopixel
   # - origin: https://github.com/mongoose-os-libs/mjs
   - origin: https://github.com/mongoose-os-libs/blynk
+
+cdefs:
+  MG_ENABLE_SNTP: 1
 
 tags:
   - c
