@@ -27,7 +27,7 @@
 
 #define ORDER MGOS_NEOPIXEL_ORDER_GRB
 #define CYLON_SIZE 1
-#define TOTAL_EFFECTS 5
+#define TOTAL_EFFECTS 10
 
 #define MODE_OFF 0
 #define MODE_ON 1
@@ -117,6 +117,15 @@ static int get_luminosity() {
 
 static bool is_dark() {
   return get_luminosity() <= mgos_sys_config_get_pir_threshold();
+}
+
+static void set_rgb_color(rgb_color c) {
+  int num_pixels = mgos_sys_config_get_strip_pixels();
+  mgos_neopixel_clear(s_strip);
+  for(int p = 0; p < num_pixels; p++) {
+    mgos_neopixel_set(s_strip, p, c.red, c.green, c.blue);
+  }
+  mgos_neopixel_show(s_strip);
 }
 
 static void first_effect() {
@@ -234,13 +243,145 @@ static void rainbow_cycle_effect() {
   }
 }
 
+static void fade_effect() {
+  static int s_fade_effect_counter = 0;
+  static int s_fade_effect_iteration = 0;
+  static bool s_fade_effect_dir = true;
+
+  if(s_fade_effect_counter >= 3) {
+    s_fade_effect_counter = 0;
+  }
+
+  if(s_fade_effect_dir) {
+    s_fade_effect_dir = s_fade_effect_iteration < 254;
+    s_fade_effect_iteration++;
+  } else {
+    s_fade_effect_dir = s_fade_effect_iteration < 2;
+    s_fade_effect_iteration--;
+    if(s_fade_effect_dir) {
+      s_fade_effect_counter++;
+    }
+  }
+  int color = s_fade_effect_iteration & 255;
+  switch(s_fade_effect_counter) {
+    case 0:
+      color = color << 16;
+      break;
+    case 1:
+      color = color << 8;
+      break;
+  }
+  rgb_color c = get_rgb_color(color);
+  set_rgb_color(c);
+}
+
+static void flash_effect() {
+  static int s_flash_effect_counter = 0;
+  static rgb_color s_flash_effect_colors[] = {
+    { 0x00, 0xFF, 0x00 }, { 0x00, 0x00, 0xFF }, { 0xFF, 0x00, 0x00 },
+    { 0xFF, 0xFF, 0x00 }, { 0x00, 0xFF, 0xFF }, { 0x71, 0xDC, 0x94 },
+    { 0xFF, 0x7F, 0x00 }, { 0x94, 0xDC, 0x71 }, { 0xC0, 0xD9, 0xD9 },
+    { 0xFF, 0x80, 0x00 }, { 0xBD, 0x8F, 0x8F }, { 0x7F, 0xFF, 0x00 },
+    { 0x50, 0x30, 0x50 }, { 0x8D, 0x78, 0x24 }, { 0xFF, 0x6E, 0xC7 },
+    { 0x4D, 0x4D, 0xFF }, { 0xF5, 0xCC, 0xB0 }, { 0x8D, 0x17, 0x17 },
+    { 0xDE, 0x94, 0xFA }, { 0x8F, 0x24, 0x24 }, { 0xCC, 0x7F, 0x32 },
+    { 0x9F, 0x9F, 0x5F }, { 0x32, 0x32, 0xCC }, { 0x71, 0xDC, 0xDC },
+    { 0x6F, 0x43, 0x43 }, { 0x24, 0x6C, 0x8F }, { 0xD9, 0xD9, 0xC0 },
+    { 0xB8, 0x73, 0x33 }, { 0xE3, 0x78, 0x33 }, { 0x85, 0x64, 0x64 }
+  };
+
+  if(s_flash_effect_counter >= 30)
+  {
+    s_flash_effect_counter = 0;
+  }
+  set_rgb_color(s_flash_effect_colors[s_flash_effect_counter++]);
+}
+
+static void rbg_loop_effect() {
+  static int s_rgb_loop_effect_counter = 0;
+  static int s_rbg_loop_effect_iteration = 0;
+  static bool s_rgb_loop_effect_dir = true;
+
+  if (s_rbg_loop_effect_iteration > 3) {
+    s_rbg_loop_effect_iteration = 0;
+  }
+
+  uint8_t k = s_rgb_loop_effect_counter & 255;
+  if (s_rgb_loop_effect_dir)
+  {
+    s_rgb_loop_effect_dir = k < 254;
+    s_rgb_loop_effect_counter++;
+  } else {
+    s_rgb_loop_effect_dir = k < 2;
+    s_rgb_loop_effect_counter--;
+    if(s_rgb_loop_effect_dir)
+    {
+      s_rbg_loop_effect_iteration++;
+    }
+  }
+  int color = 0xFF0000;
+  switch(s_rbg_loop_effect_iteration)
+  {
+    case 1:
+      color = color >> 8;
+      break;
+    case 2:
+      color = color >> 16;
+      break;
+  }
+  rgb_color c = get_rgb_color(color);
+  set_rgb_color(c);
+}
+
+static int random(int max) {
+  return (rand() % max + 1); 
+}
+
+static void twinkle_effect() {
+  static int s_twinkle_effect_counter = 0;
+
+  int num_pixels = mgos_sys_config_get_strip_pixels();
+  int color = mgos_sys_config_get_strip_color();
+  rgb_color c = get_rgb_color(color);
+  if (s_twinkle_effect_counter < num_pixels / 3) {
+    int p = random(num_pixels - 1);
+    mgos_neopixel_clear(s_strip);
+    mgos_neopixel_set(s_strip, p, c.red, c.green, c.blue);
+    mgos_neopixel_show(s_strip);
+    s_twinkle_effect_counter++;
+  } else {
+    s_twinkle_effect_counter = 0;
+    rgb_color c = get_rgb_color(0);
+    set_rgb_color(c);
+  }
+}
+
+static void twinkle_random_effect() {
+  static int s_twinkle_effect_counter = 0;
+  int num_pixels = mgos_sys_config_get_strip_pixels();
+  if (s_twinkle_effect_counter < num_pixels / 3) {
+    mgos_neopixel_clear(s_strip);
+    int p = random(num_pixels - 1);
+    int r = random(254);
+    int g = random(254);
+    int b = random(254);
+    mgos_neopixel_set(s_strip, p, r, g, b);
+    mgos_neopixel_show(s_strip);
+    s_twinkle_effect_counter++;
+  } else {
+    s_twinkle_effect_counter = 0;
+    rgb_color c = get_rgb_color(0);
+    set_rgb_color(c);
+  }
+}
+
 static void start_effect() {
   clear_timers();
   int effect = mgos_sys_config_get_strip_effect();
   int speed = 200; // TODO: config speed
   switch(effect) {
     case 0:
-      effect_timer = mgos_set_timer(speed, MGOS_TIMER_REPEAT, first_effect, NULL);
+      effect_timer = mgos_set_timer(speed / 4 * 3, MGOS_TIMER_REPEAT, first_effect, NULL);
       LOG(LL_INFO, ("Starting first effect..."));
       break;
     case 1:
@@ -248,7 +389,7 @@ static void start_effect() {
       LOG(LL_INFO, ("Starting strobe effect..."));
       break;
     case 2:
-      effect_timer = mgos_set_timer(speed, MGOS_TIMER_REPEAT, cylon_effect, NULL);
+      effect_timer = mgos_set_timer(speed / 4 * 3, MGOS_TIMER_REPEAT, cylon_effect, NULL);
       LOG(LL_INFO, ("Starting cylon effect..."));
       break;
     case 3:
@@ -258,6 +399,26 @@ static void start_effect() {
     case 4:
       effect_timer = mgos_set_timer(speed, MGOS_TIMER_REPEAT, rainbow_cycle_effect, NULL);
       LOG(LL_INFO, ("Starting rainbow cycle effect..."));
+      break;
+    case 5:
+      effect_timer = mgos_set_timer(speed / 4, MGOS_TIMER_REPEAT, fade_effect, NULL);
+      LOG(LL_INFO, ("Starting fade effect..."));
+      break;
+    case 6:
+      effect_timer = mgos_set_timer(speed * 3, MGOS_TIMER_REPEAT, flash_effect, NULL);
+      LOG(LL_INFO, ("Starting flash effect..."));
+      break;
+    case 7:
+      effect_timer = mgos_set_timer(speed / 5, MGOS_TIMER_REPEAT, rbg_loop_effect, NULL);
+      LOG(LL_INFO, ("Starting RGB loop effect..."));
+      break;
+    case 8:
+      effect_timer = mgos_set_timer(speed, MGOS_TIMER_REPEAT, twinkle_effect, NULL);
+      LOG(LL_INFO, ("Starting twinkle effect..."));
+      break;
+    case 9:
+      effect_timer = mgos_set_timer(speed, MGOS_TIMER_REPEAT, twinkle_random_effect, NULL);
+      LOG(LL_INFO, ("Starting twinkle random effect..."));
       break;
     default:
       LOG(LL_INFO, ("Bad effect: %d", effect));
