@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+#include "math.h"
 #include "mgos.h"
 #include "mgos_time.h"
 #include "mgos_timers.h"
@@ -27,7 +28,9 @@
 
 #define ORDER MGOS_NEOPIXEL_ORDER_GRB
 #define CYLON_SIZE 1
-#define TOTAL_EFFECTS 10
+#define TOTAL_EFFECTS 12
+
+#define SNOW_EFFECT_INDEX 11
 
 #define MODE_OFF 0
 #define MODE_ON 1
@@ -119,7 +122,7 @@ static bool is_dark() {
   return get_luminosity() <= mgos_sys_config_get_pir_threshold();
 }
 
-static void set_rgb_color(rgb_color c) {
+static void set_strip_rgb_color(rgb_color c) {
   int num_pixels = mgos_sys_config_get_strip_pixels();
   mgos_neopixel_clear(s_strip);
   for(int p = 0; p < num_pixels; p++) {
@@ -272,7 +275,7 @@ static void fade_effect() {
       break;
   }
   rgb_color c = get_rgb_color(color);
-  set_rgb_color(c);
+  set_strip_rgb_color(c);
 }
 
 static void flash_effect() {
@@ -294,7 +297,7 @@ static void flash_effect() {
   {
     s_flash_effect_counter = 0;
   }
-  set_rgb_color(s_flash_effect_colors[s_flash_effect_counter++]);
+  set_strip_rgb_color(s_flash_effect_colors[s_flash_effect_counter++]);
 }
 
 static void rbg_loop_effect() {
@@ -330,11 +333,11 @@ static void rbg_loop_effect() {
       break;
   }
   rgb_color c = get_rgb_color(color);
-  set_rgb_color(c);
+  set_strip_rgb_color(c);
 }
 
-static int random(int max) {
-  return (rand() % max + 1); 
+static int random(int min, int max) {
+  return (rand() % (max - min + 1)) + min;
 }
 
 static void twinkle_effect() {
@@ -343,35 +346,99 @@ static void twinkle_effect() {
   int num_pixels = mgos_sys_config_get_strip_pixels();
   int color = mgos_sys_config_get_strip_color();
   rgb_color c = get_rgb_color(color);
+
   if (s_twinkle_effect_counter < num_pixels / 3) {
-    int p = random(num_pixels - 1);
-    mgos_neopixel_clear(s_strip);
+    int p = random(0, num_pixels - 1);
     mgos_neopixel_set(s_strip, p, c.red, c.green, c.blue);
     mgos_neopixel_show(s_strip);
     s_twinkle_effect_counter++;
   } else {
     s_twinkle_effect_counter = 0;
     rgb_color c = get_rgb_color(0);
-    set_rgb_color(c);
+    set_strip_rgb_color(c);
   }
 }
 
 static void twinkle_random_effect() {
-  static int s_twinkle_effect_counter = 0;
+  static int s_twinkle_random_effect_counter = 0;
   int num_pixels = mgos_sys_config_get_strip_pixels();
-  if (s_twinkle_effect_counter < num_pixels / 3) {
-    mgos_neopixel_clear(s_strip);
-    int p = random(num_pixels - 1);
-    int r = random(254);
-    int g = random(254);
-    int b = random(254);
+
+  if (s_twinkle_random_effect_counter < num_pixels / 3) {
+    int p = random(0, num_pixels - 1);
+    int r = random(0, 254);
+    int g = random(0, 254);
+    int b = random(0, 254);
     mgos_neopixel_set(s_strip, p, r, g, b);
     mgos_neopixel_show(s_strip);
-    s_twinkle_effect_counter++;
+    s_twinkle_random_effect_counter++;
   } else {
-    s_twinkle_effect_counter = 0;
+    s_twinkle_random_effect_counter = 0;
     rgb_color c = get_rgb_color(0);
-    set_rgb_color(c);
+    set_strip_rgb_color(c);
+  }
+}
+
+static void fire_effect() {
+  static int heat[30]; // TODO
+  static int cooling = 90;
+  static int sparking = 120;
+  int cooldown;
+
+  int num_pixels = mgos_sys_config_get_strip_pixels();
+
+  for(int i = 0; i < num_pixels; i++) {
+    cooldown = random(0, ((cooling * 10) / num_pixels) + 2);
+    if(cooldown > heat[i]) {
+      heat[i] = 0;
+    } else {
+      heat[i] = heat[i] - cooldown;
+    }
+  }
+
+  for(int k = num_pixels - 1; k >= 2; k--) {
+    heat[k] = (heat[k - 1] + heat[k - 2] + heat[k - 2]) / 3;
+  }
+
+  if(random(0, 254) < sparking) {
+    int y = random(0, 6);
+    heat[y] = heat[y] + random(159, 254);
+  }
+
+  mgos_neopixel_clear(s_strip);
+  for(int j = 0; j < num_pixels; j++) {
+    int t192 = round((heat[j] / 255.0) * 191);
+    int heatramp = t192 & 0x3F;
+    heatramp <<= 2;
+    heatramp = heatramp & 255;
+    if(t192 > 0x80) {
+      mgos_neopixel_set(s_strip, j, 255, 255, heatramp);
+    } else if(t192 > 0x40) {
+      mgos_neopixel_set(s_strip, j, 255, heatramp, 0);
+    } else {
+      mgos_neopixel_set(s_strip, j, heatramp, 0, 0);
+    }
+  }
+
+  mgos_neopixel_show(s_strip);
+}
+
+static void snow_effect_cb() {
+  rgb_color c = get_rgb_color(0x101010);
+  set_strip_rgb_color(c);
+  mgos_neopixel_show(s_strip);
+}
+
+static void snow_effect() {
+  rgb_color c = get_rgb_color(0x101010);
+  set_strip_rgb_color(c);
+  int num_pixels = mgos_sys_config_get_strip_pixels();
+  int p = random(0, num_pixels - 1);
+  mgos_neopixel_set(s_strip, p, 0xFF, 0xFF, 0xFF);
+  mgos_neopixel_show(s_strip);
+  mgos_set_timer(20, false, snow_effect_cb, NULL);
+  if(mgos_sys_config_get_strip_effect() == SNOW_EFFECT_INDEX) {
+    int d = random(120, 1000);
+    mgos_set_timer(d, false, snow_effect, NULL);
   }
 }
 
@@ -413,12 +480,22 @@ static void start_effect() {
       LOG(LL_INFO, ("Starting RGB loop effect..."));
       break;
     case 8:
+      set_strip_rgb_color(get_rgb_color(0));
       effect_timer = mgos_set_timer(speed, MGOS_TIMER_REPEAT, twinkle_effect, NULL);
       LOG(LL_INFO, ("Starting twinkle effect..."));
       break;
     case 9:
+      set_strip_rgb_color(get_rgb_color(0));
       effect_timer = mgos_set_timer(speed, MGOS_TIMER_REPEAT, twinkle_random_effect, NULL);
       LOG(LL_INFO, ("Starting twinkle random effect..."));
+      break;
+    case 10:
+      effect_timer = mgos_set_timer(speed / 10, MGOS_TIMER_REPEAT, fire_effect, NULL);
+      LOG(LL_INFO, ("Starting fire effect..."));
+      break;
+    case 11:
+      snow_effect();
+      LOG(LL_INFO, ("Starting snow effect..."));
       break;
     default:
       LOG(LL_INFO, ("Bad effect: %d", effect));
@@ -440,7 +517,7 @@ static void start_night_light() {
 
 static void start_vigilance() {
   clear_timers();
-  int speed = 200; // TODO
+  int speed = 100; // TODO
   effect_timer = mgos_set_timer(speed, MGOS_TIMER_REPEAT, cylon_effect, NULL);
   mgos_sys_config_set_app_mode(MODE_VIGILANCE);
 }
@@ -469,7 +546,7 @@ static void dht_timer_cb(void *dht) {
 }
 
 static void led_strip_brightness(int brightness) {
-  LOG(LL_INFO, ("Set Led Strip Brightness: %d", brightness));
+  brightness = brightness & 255;
   mgos_neopixel_clear(s_strip);
   int num_pixels = mgos_sys_config_get_strip_pixels();
   for(int p = 0; p < num_pixels; p++) {
@@ -638,8 +715,8 @@ static void rpc_set_vigilance_cb(struct mg_rpc_request_info *ri, const char *arg
 enum mgos_app_init_result mgos_app_init(void) {
 
   // Configure Built in LED
-  /* mgos_gpio_set_mode(mgos_sys_config_get_pins_bled(), MGOS_GPIO_MODE_OUTPUT);
-  mgos_set_timer(1000, MGOS_TIMER_REPEAT, bled_timer_cb, NULL); */
+  /*mgos_gpio_set_mode(mgos_sys_config_get_pins_bled(), MGOS_GPIO_MODE_OUTPUT);
+  mgos_set_timer(1000, MGOS_TIMER_REPEAT, bled_timer_cb, NULL);*/
 
   // Configure DHT sensor
   s_dht = mgos_dht_create(mgos_sys_config_get_pins_dht(), DHT11);

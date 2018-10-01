@@ -11,8 +11,8 @@ sources:
 filesystem:
   - fs
 config_schema:
-  - ["mqtt.server", "10.10.0.246:1883"]
-  # - ["mqtt.server", "192.168.0.117:1883"]
+  # - ["mqtt.server", "10.10.0.246:1883"]
+  - ["mqtt.server", "192.168.0.117:1883"]
   - ["mqtt.enable", true]
 
   - ["sntp", "o", {title: "SNTP settings"}]
@@ -36,10 +36,10 @@ config_schema:
   - ["pir", "o", {title: "PIR motion sensor configuration"}]
   - ["pir.indicator", "b", true, {title: "Pir led indicator"}]
   - ["pir.threshold", "i", 250, {title: "Luminosity threshold"}]
-  - ["pir.keep", "i", 10, {title: "Time to keep turn on (seconds)"}]
+  - ["pir.keep", "i", 30, {title: "Time to keep turn on (seconds)"}]
 
   - ["strip", "o", {title: "Led Strip WS2812 configuration"}]
-  - ["strip.pixels", "i", 12, {title: "Led Strip pixels"}]
+  - ["strip.pixels", "i", 30, {title: "Led Strip pixels"}]
   - ["strip.color", "i", 0x881F78, {title: "Led Strip color"}]
   - ["strip.brightness", "i", 100, {title: "Led Strip brightness"}]
   - ["strip.effect", "i", 0, {title: "Led Strip effect"}]
