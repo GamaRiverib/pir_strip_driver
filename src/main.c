@@ -20,13 +20,13 @@
 #include "mgos_time.h"
 #include "mgos_timers.h"
 #include "mgos_gpio.h"
-// #include "mgos_dht.h"
 #include "mgos_adc.h"
 #include "mgos_rpc.h"
 #include "mgos_mqtt.h"
 #include "mgos_neopixel.h"
 #include "mgos_blynk.h"
 #include "nvk_nodes.h"
+#include "nvk_nodes_pir.h"
 
 #define ORDER MGOS_NEOPIXEL_ORDER_GRB
 #define CYLON_SIZE 1
@@ -46,7 +46,6 @@ typedef struct {
   int blue;
 } rgb_color;
 
-// static struct mgos_dht *s_dht = NULL;
 static struct mgos_neopixel *s_strip = NULL;
 
 static mgos_timer_id effect_timer = MGOS_INVALID_TIMER_ID;
@@ -55,7 +54,6 @@ static mgos_timer_id alert_timer = MGOS_INVALID_TIMER_ID;
 static float last_motion_time = 0;
 static int smooth_brightness = 0;
 
-const char WEATHER_JSON_FMT[] = "{temperature:%d,humidity:%d,luminosity:%d,uptime:%f}";
 const char MOTION_ALERT_JSON_FMT[] = "{uptime:%f}";
 
 // TODO: static void get_weather(char *)
@@ -527,22 +525,6 @@ static void bled_timer_cb(void *args) {
 }
 */
 
-/*static void dht_timer_cb(void *dht) {
-  float t = mgos_dht_get_temp(dht);
-  float h = mgos_dht_get_humidity(dht);
-  int l = get_luminosity();
-
-  if (isnan(h) || isnan(t)) {
-    LOG(LL_INFO, ("Failed to read data from sensor\n"));
-    return;
-  }
-  LOG(LL_INFO, ("\nTemperature: %d *C \nHumidity: %d %%\nLuminosity: %d lux", (int)t, (int)h, l));
-
-  mgos_mqtt_pubf("Weather", 1, false, WEATHER_JSON_FMT, (int)t, (int)h, l, mgos_uptime());
-
-  (void) dht;
-}*/
-
 static void led_strip_brightness(int brightness) {
   brightness = brightness & 255;
   mgos_neopixel_clear(s_strip);
@@ -614,32 +596,15 @@ static void motion_handler() {
   }
 }
 
-static void pir_timer_cb(void *args) {
-  bool motion = mgos_gpio_read(mgos_sys_config_get_pins_pir());
-  if(mgos_sys_config_get_pir_indicator()) {
-    mgos_gpio_write(mgos_sys_config_get_pins_led(), motion);
-  }
-  if(motion) {
-    motion_handler();
-  }
-  (void) args;
+void node_pir_toggle_handler(int value, void *user_data) {
+    if(mgos_sys_config_get_pir_indicator()) {
+      mgos_gpio_write(mgos_sys_config_get_pins_led(), value);
+    }
+    if(value) {
+      motion_handler();
+    }
+    (void) user_data;
 }
-
-/*static void rpc_weather_cb(struct mg_rpc_request_info *ri, const char *args,
-                           const char *src, void *dht) {
-  float t = mgos_dht_get_temp(dht);
-  float h = mgos_dht_get_humidity(dht);
-  int l = get_luminosity();
-  if(isnan(h) || isnan(t)) {
-    mg_rpc_send_errorf(ri, -1, "{error: \"Failed to read data from sensor\"}");
-  } else {
-    LOG(LL_INFO, ("\nTemperature: %d *C \nHumidity: %d %%\nLuminosity: %d lux", (int)t, (int)h, l));
-    mgos_mqtt_pubf("Weather", 1, false, WEATHER_JSON_FMT, (int)t, (int)h, l, mgos_uptime());
-    mg_rpc_send_responsef(ri, WEATHER_JSON_FMT, (int)t, (int)h, l, mgos_uptime());
-  }
-  (void) args;
-  (void) src;
-}*/
 
 static void rpc_turn_on_cb(struct mg_rpc_request_info *ri, const char *args,
                            const char *src, void *user_data) {
@@ -765,6 +730,8 @@ enum mgos_app_init_result mgos_app_init(void) {
 
   if(nodes_init()) {
     LOG(LL_INFO, ("Nodes init succesfully."));
+
+    node_pir_set_pir_toggle_handler(node_pir_toggle_handler, NULL);
   } else {
     LOG(LL_INFO, ("Nodes init error."));
   }
@@ -773,22 +740,14 @@ enum mgos_app_init_result mgos_app_init(void) {
   /*mgos_gpio_set_mode(mgos_sys_config_get_pins_bled(), MGOS_GPIO_MODE_OUTPUT);
   mgos_set_timer(1000, MGOS_TIMER_REPEAT, bled_timer_cb, NULL);*/
 
-  // Configure DHT sensor
-  /*s_dht = mgos_dht_create(mgos_sys_config_get_pins_dht(), DHT11);
-  mgos_set_timer(mgos_sys_config_get_app_tele() * 1000, MGOS_TIMER_REPEAT, dht_timer_cb, s_dht);*/
-
-  // Configure PIR sensor
-  mgos_gpio_set_mode(mgos_sys_config_get_pins_pir(), MGOS_GPIO_MODE_INPUT); // return bool
+  // Configure LED indicator for PIR sensor 
   mgos_gpio_set_mode(mgos_sys_config_get_pins_led(), MGOS_GPIO_MODE_OUTPUT);
-  mgos_set_timer(500, MGOS_TIMER_REPEAT, pir_timer_cb, NULL);
 
   // Configure Led Strip WS2812
   int num_pixels = mgos_sys_config_get_strip_pixels();
   s_strip = mgos_neopixel_create(mgos_sys_config_get_pins_strip(), num_pixels, ORDER);
-  // mgos_set_timer(150, MGOS_TIMER_REPEAT, strip_timer_cb, s_strip);
 
   // Configure RPC interface
-  // mgos_rpc_add_handler("Driver.Weather", rpc_weather_cb, s_dht);
   mgos_rpc_add_handler("Driver.On", rpc_turn_on_cb, NULL);
   mgos_rpc_add_handler("Driver.Off", rpc_turn_off_cb, NULL);
   mgos_rpc_add_handler("Driver.Effect", rpc_set_effect_cb, NULL);

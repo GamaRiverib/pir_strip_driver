@@ -40,8 +40,8 @@ const char DHT_RPC_SET_RANGE_MAX_METHOD_NAME[] = "Nodes.DHT.Range.Max";
 const char DHT_RPC_SET_SAMPLING_INTERVAL_METHOD_NAME[] = "Nodes.DHT.Sampling.Interval";
 const char DHT_RPC_SET_TELE_INTERVAL_METHOD_NAME[] = "Nodes.DHT.Tele.Interval";
 
-static mgos_timer_id sampling_interval_timer_id = MGOS_INVALID_TIMER_ID;
-static mgos_timer_id tele_interval_timer_id = MGOS_INVALID_TIMER_ID;
+static mgos_timer_id node_dht_samp_int_timer_id = MGOS_INVALID_TIMER_ID;
+static mgos_timer_id node_dht_tele_int_timer_id = MGOS_INVALID_TIMER_ID;
 
 void node_dht_set_temp_on_range_handler(node_on_range_handler_t func, void *user_data) {
     s_node_temp_on_range_handler = func;
@@ -198,8 +198,8 @@ bool node_dht_init() {
         int tele_interval = mgos_sys_config_get_nodes_dht_tele_interval();
 
         s_node_dht = mgos_dht_create(pin, type);
-        sampling_interval_timer_id = mgos_set_timer(sampling_interval, MGOS_TIMER_REPEAT, node_dht_sampling_handler, s_node_dht);
-        tele_interval_timer_id = mgos_set_timer(tele_interval, MGOS_TIMER_REPEAT, node_dht_tele_handler, s_node_dht);
+        node_dht_samp_int_timer_id = mgos_set_timer(sampling_interval, MGOS_TIMER_REPEAT, node_dht_sampling_handler, s_node_dht);
+        node_dht_tele_int_timer_id = mgos_set_timer(tele_interval, MGOS_TIMER_REPEAT, node_dht_tele_handler, s_node_dht);
         mgos_rpc_add_handler(DHT_RPC_STAT_METHOD_NAME, node_dht_rpc_stat_handler, s_node_dht);
         mgos_rpc_add_handler(DHT_RPC_SET_RANGE_MIN_METHOD_NAME, node_dht_rpc_set_range_min_handler, s_node_dht);
         mgos_rpc_add_handler(DHT_RPC_SET_RANGE_MAX_METHOD_NAME, node_dht_rpc_set_range_max_handler, s_node_dht);

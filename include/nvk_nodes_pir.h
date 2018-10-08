@@ -15,15 +15,27 @@
  * limitations under the License.
  */
 
-#include <stdbool.h>
-#include "mgos.h"
-#include "nvk_nodes.h"
-#include "nvk_nodes_dht.h"
-#include "nvk_nodes_pir.h"
+/*
+ * NVK Node Lib.
+ */
 
-/* Initialize Nodes */
-bool nodes_init() {
-    node_dht_init(); // TODO
-    node_pir_init();
-    return true;
+#include <stdint.h>
+#include "nvk_nodes.h"
+#include "mgos_rpc.h"
+
+#ifndef NVK_LIBS_NODES_INCLUDE_NVK_NODES_PIR_H_
+#define NVK_LIBS_NODES_INCLUDE_NVK_NODES_PIR_H_
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+bool node_pir_init();
+void node_pir_sampling_handler();
+void node_pir_set_pir_toggle_handler(node_switch_handler_t func, void *user_data);
+
+#ifdef __cplusplus
 }
+#endif /* __cplusplus */
+
+#endif /* NVK_LIBS_NODES_INCLUDE_NVK_NODES_PIR_H_ */

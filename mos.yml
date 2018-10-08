@@ -48,6 +48,16 @@ config_schema:
   - ["nodes.dht.tele.interval", "i", 30000, {title: "DHT Node telemetry interval"}]
   - ["nodes.dht.tele.topic", "s", "weather", {title: "DHT Node MQTT topic for telemetry"}]
 
+  - ["nodes.pir", "o", {title: "PIR Node wrapper definition"}] #AM312 PIR sensor
+  - ["nodes.pir.enable", "b", true, {title: "PIR Node enabled"}]
+  - ["nodes.pir.pin", "i", 14, {title: "PIR sensor pin"}]
+
+  - ["nodes.pir.sampling", "o", {title: "PIR Node sampling config"}]
+  - ["nodes.pir.sampling.interval", "i", 500, {title: "PIR Node sampling interval"}]
+
+  - ["nodes.pir.stat", "o", {title: "PIR State config"}]
+  - ["nodes.pir.stat.topic", "s", "pir", {title: "PIR Node MQTT topic for state"}]
+
   - ["sntp", "o", {title: "SNTP settings"}]
   - ["sntp.enable", "b", true, {title: "Enable SNTP"}]
   - ["sntp.server", "s", "time.google.com", {title: "Server address"}]
@@ -56,14 +66,10 @@ config_schema:
   - ["sntp.update_interval", "i", 7200, {title: "Update interval. If 0, performs a one-off sync"}]
 
   - ["pins", "o", {title: "Pins configuration"}]
-  - ["pins.bled", "i", 0, {title: "Built in led pin"}]
-  - ["pins.dht", "i", 13, {title: "DHT sensor pin"}]
-  - ["pins.pir", "i", 14, {title: "PIR sensor pin"}]
   - ["pins.led", "i", 12, {title: "PIR led pin"}]
   - ["pins.strip", "i", 2, {title: "Led Strip pin"}]
 
   - ["app", "o", {title: "App custom settings"}]
-  - ["app.tele", "i", 60, {title: "Telemetry interval (seconds)"}]
   - ["app.mode", "i", 0, {title: "Driver operational mode (0 - 4)"}]
 
   - ["pir", "o", {title: "PIR motion sensor configuration"}]

@@ -42,6 +42,8 @@ enum node_out_range_event_type {
 typedef void (*node_out_range_handler_t)(enum node_out_range_event_type ev, struct node_range_values *values, void *user_data);
 typedef void (*node_on_range_handler_t)(struct node_range_values *values, void *user_data);
 
+typedef void (*node_switch_handler_t)(int value, void *user_data);
+
 /* Initialize Nodes */
 bool nodes_init();
 
