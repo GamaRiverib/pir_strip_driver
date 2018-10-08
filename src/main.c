@@ -14,17 +14,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 #include "math.h"
 #include "mgos.h"
+#include "mgos_utils.h"
 #include "mgos_time.h"
 #include "mgos_timers.h"
 #include "mgos_gpio.h"
-#include "mgos_dht.h"
+// #include "mgos_dht.h"
 #include "mgos_adc.h"
 #include "mgos_rpc.h"
 #include "mgos_mqtt.h"
 #include "mgos_neopixel.h"
+#include "mgos_blynk.h"
+#include "nvk_nodes.h"
 
 #define ORDER MGOS_NEOPIXEL_ORDER_GRB
 #define CYLON_SIZE 1
@@ -44,7 +46,7 @@ typedef struct {
   int blue;
 } rgb_color;
 
-static struct mgos_dht *s_dht = NULL;
+// static struct mgos_dht *s_dht = NULL;
 static struct mgos_neopixel *s_strip = NULL;
 
 static mgos_timer_id effect_timer = MGOS_INVALID_TIMER_ID;
@@ -336,10 +338,6 @@ static void rbg_loop_effect() {
   set_strip_rgb_color(c);
 }
 
-static int random(int min, int max) {
-  return (rand() % (max - min + 1)) + min;
-}
-
 static void twinkle_effect() {
   static int s_twinkle_effect_counter = 0;
 
@@ -348,7 +346,7 @@ static void twinkle_effect() {
   rgb_color c = get_rgb_color(color);
 
   if (s_twinkle_effect_counter < num_pixels / 3) {
-    int p = random(0, num_pixels - 1);
+    int p = (int) mgos_rand_range(0, num_pixels - 1);
     mgos_neopixel_set(s_strip, p, c.red, c.green, c.blue);
     mgos_neopixel_show(s_strip);
     s_twinkle_effect_counter++;
@@ -364,10 +362,10 @@ static void twinkle_random_effect() {
   int num_pixels = mgos_sys_config_get_strip_pixels();
 
   if (s_twinkle_random_effect_counter < num_pixels / 3) {
-    int p = random(0, num_pixels - 1);
-    int r = random(0, 254);
-    int g = random(0, 254);
-    int b = random(0, 254);
+    int p = (int) mgos_rand_range(0, num_pixels - 1);
+    int r = (int) mgos_rand_range(0, 254);
+    int g = (int) mgos_rand_range(0, 254);
+    int b = (int) mgos_rand_range(0, 254);
     mgos_neopixel_set(s_strip, p, r, g, b);
     mgos_neopixel_show(s_strip);
     s_twinkle_random_effect_counter++;
@@ -387,7 +385,7 @@ static void fire_effect() {
   int num_pixels = mgos_sys_config_get_strip_pixels();
 
   for(int i = 0; i < num_pixels; i++) {
-    cooldown = random(0, ((cooling * 10) / num_pixels) + 2);
+    cooldown = (int) mgos_rand_range(0, ((cooling * 10) / num_pixels) + 2);
     if(cooldown > heat[i]) {
       heat[i] = 0;
     } else {
@@ -399,9 +397,9 @@ static void fire_effect() {
     heat[k] = (heat[k - 1] + heat[k - 2] + heat[k - 2]) / 3;
   }
 
-  if(random(0, 254) < sparking) {
-    int y = random(0, 6);
-    heat[y] = heat[y] + random(159, 254);
+  if((int) mgos_rand_range(0, 254) < sparking) {
+    int y = (int) mgos_rand_range(0, 6);
+    heat[y] = heat[y] + (int) mgos_rand_range(159, 254);
   }
 
   mgos_neopixel_clear(s_strip);
@@ -429,15 +427,15 @@ static void snow_effect_cb() {
 }
 
 static void snow_effect() {
-  rgb_color c = get_rgb_color(0x101010);
-  set_strip_rgb_color(c);
-  int num_pixels = mgos_sys_config_get_strip_pixels();
-  int p = random(0, num_pixels - 1);
-  mgos_neopixel_set(s_strip, p, 0xFF, 0xFF, 0xFF);
-  mgos_neopixel_show(s_strip);
-  mgos_set_timer(20, false, snow_effect_cb, NULL);
-  if(mgos_sys_config_get_strip_effect() == SNOW_EFFECT_INDEX) {
-    int d = random(120, 1000);
+  if(mgos_sys_config_get_strip_effect() == SNOW_EFFECT_INDEX && mgos_sys_config_get_app_mode() == MODE_EFFECT) {
+    rgb_color c = get_rgb_color(0x101010);
+    set_strip_rgb_color(c);
+    int num_pixels = mgos_sys_config_get_strip_pixels();
+    int p = (int) mgos_rand_range(0, num_pixels - 1);
+    mgos_neopixel_set(s_strip, p, 0xFF, 0xFF, 0xFF);
+    mgos_neopixel_show(s_strip);
+    mgos_set_timer(20, false, snow_effect_cb, NULL);
+    int d = (int) mgos_rand_range(120, 1000);
     mgos_set_timer(d, false, snow_effect, NULL);
   }
 }
@@ -529,7 +527,7 @@ static void bled_timer_cb(void *args) {
 }
 */
 
-static void dht_timer_cb(void *dht) {
+/*static void dht_timer_cb(void *dht) {
   float t = mgos_dht_get_temp(dht);
   float h = mgos_dht_get_humidity(dht);
   int l = get_luminosity();
@@ -543,7 +541,7 @@ static void dht_timer_cb(void *dht) {
   mgos_mqtt_pubf("Weather", 1, false, WEATHER_JSON_FMT, (int)t, (int)h, l, mgos_uptime());
 
   (void) dht;
-}
+}*/
 
 static void led_strip_brightness(int brightness) {
   brightness = brightness & 255;
@@ -627,7 +625,7 @@ static void pir_timer_cb(void *args) {
   (void) args;
 }
 
-static void rpc_weather_cb(struct mg_rpc_request_info *ri, const char *args,
+/*static void rpc_weather_cb(struct mg_rpc_request_info *ri, const char *args,
                            const char *src, void *dht) {
   float t = mgos_dht_get_temp(dht);
   float h = mgos_dht_get_humidity(dht);
@@ -641,7 +639,7 @@ static void rpc_weather_cb(struct mg_rpc_request_info *ri, const char *args,
   }
   (void) args;
   (void) src;
-}
+}*/
 
 static void rpc_turn_on_cb(struct mg_rpc_request_info *ri, const char *args,
                            const char *src, void *user_data) {
@@ -712,15 +710,72 @@ static void rpc_set_vigilance_cb(struct mg_rpc_request_info *ri, const char *arg
   (void) user_data;
 }
 
+static void custom_blynk_handler(struct mg_connection *c, const char *cmd, int pin, int val, int id, void *user_data) {
+  LOG(LL_INFO, ("custom_blynk_handler"));
+  if (strcmp(cmd, "vr") == 0) {
+    /*if (pin == s_read_virtual_pin) {
+      blynk_virtual_write(c, id, s_read_virtual_pin,
+                          (float) mgos_get_free_heap_size() / 1024);
+    }*/
+    switch(pin) {
+      case 0:
+        LOG(LL_INFO, ("Blynk::vr::Temp"));
+        break;
+      case 1:
+        LOG(LL_INFO, ("Blynk::vr::Humd"));
+        break;
+      case 2:
+        LOG(LL_INFO, ("Blynk::vr::Lum"));
+        break;
+      default:
+        LOG(LL_INFO, ("Bad virtual read pin"));
+    }
+  } else if (strcmp(cmd, "vw") == 0) {
+    /*if (pin == s_write_virtual_pin) {
+      mgos_gpio_set_mode(s_led_pin, MGOS_GPIO_MODE_OUTPUT);
+      mgos_gpio_write(s_led_pin, val);
+    }*/
+    switch(pin) {
+      case 3:
+        LOG(LL_INFO, ("Blynk::vw::Led"));
+        break;
+      case 4:
+        LOG(LL_INFO, ("Blynk::vw::Mode"));
+        break;
+      case 5:
+        LOG(LL_INFO, ("Blynk::vw::OnOff"));
+        break;
+      case 6:
+        LOG(LL_INFO, ("Blynk::vw::Effect"));
+        break;
+      case 7:
+        LOG(LL_INFO, ("Blynk::vw::Color"));
+        break;
+      default:
+        LOG(LL_INFO, ("Bad virtual write pin"));
+    }
+  }
+  (void) c;
+  (void) val;
+  (void) id;
+  (void) user_data;
+}
+
 enum mgos_app_init_result mgos_app_init(void) {
+
+  if(nodes_init()) {
+    LOG(LL_INFO, ("Nodes init succesfully."));
+  } else {
+    LOG(LL_INFO, ("Nodes init error."));
+  }
 
   // Configure Built in LED
   /*mgos_gpio_set_mode(mgos_sys_config_get_pins_bled(), MGOS_GPIO_MODE_OUTPUT);
   mgos_set_timer(1000, MGOS_TIMER_REPEAT, bled_timer_cb, NULL);*/
 
   // Configure DHT sensor
-  s_dht = mgos_dht_create(mgos_sys_config_get_pins_dht(), DHT11);
-  mgos_set_timer(mgos_sys_config_get_app_tele() * 1000, MGOS_TIMER_REPEAT, dht_timer_cb, s_dht);
+  /*s_dht = mgos_dht_create(mgos_sys_config_get_pins_dht(), DHT11);
+  mgos_set_timer(mgos_sys_config_get_app_tele() * 1000, MGOS_TIMER_REPEAT, dht_timer_cb, s_dht);*/
 
   // Configure PIR sensor
   mgos_gpio_set_mode(mgos_sys_config_get_pins_pir(), MGOS_GPIO_MODE_INPUT); // return bool
@@ -733,13 +788,20 @@ enum mgos_app_init_result mgos_app_init(void) {
   // mgos_set_timer(150, MGOS_TIMER_REPEAT, strip_timer_cb, s_strip);
 
   // Configure RPC interface
-  mgos_rpc_add_handler("Driver.Weather", rpc_weather_cb, s_dht);
+  // mgos_rpc_add_handler("Driver.Weather", rpc_weather_cb, s_dht);
   mgos_rpc_add_handler("Driver.On", rpc_turn_on_cb, NULL);
   mgos_rpc_add_handler("Driver.Off", rpc_turn_off_cb, NULL);
   mgos_rpc_add_handler("Driver.Effect", rpc_set_effect_cb, NULL);
   mgos_rpc_add_handler("Driver.Next", rpc_set_next_effect_cb, NULL);
   mgos_rpc_add_handler("Driver.Night", rpc_set_night_light_cb, NULL);
   mgos_rpc_add_handler("Driver.Vigilance", rpc_set_vigilance_cb, NULL);
+
+  if (mgos_blynk_init()) {
+    LOG(LL_INFO, ("Blynk init success"));
+    blynk_set_handler(custom_blynk_handler, NULL);
+  } else {
+    LOG(LL_INFO, ("Failed to init Blynk"));
+  }
 
   int mode = mgos_sys_config_get_app_mode();
   switch(mode) {
@@ -762,7 +824,7 @@ enum mgos_app_init_result mgos_app_init(void) {
       LOG(LL_INFO, ("Bad mode %d", mode));
       mgos_sys_config_set_app_mode(0);
       // TODO: Save config and reboot
-  }
+  }  
 
   return MGOS_APP_INIT_SUCCESS;
 }

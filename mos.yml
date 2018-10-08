@@ -8,12 +8,45 @@ mongoose_os_version: ${mos.version}
 
 sources:
   - src
+includes:
+  - include
 filesystem:
   - fs
 config_schema:
-  # - ["mqtt.server", "10.10.0.246:1883"]
-  - ["mqtt.server", "192.168.0.117:1883"]
+  - ["mqtt.server", "10.10.0.246:1883"]
+  # - ["mqtt.server", "192.168.0.117:1883"]
   - ["mqtt.enable", true]
+
+  - ["blynk.server", "192.168.137.1:8442"]
+  - ["blynk.auth", "61e3a70da59542cc92eee4247e06167a"]
+  # - ["blynk.server", "192.168.0.117:8442"]
+  # - ["blynk.auth", ""]
+  - ["blynk.enable", true]
+
+  # Nodes (Drivers wrapper)
+  - ["nodes", "o", {title: "Nodes wrappers definition"}]
+
+  - ["nodes.dht", "o", {title: "DHT Node wrapper definition"}]
+  - ["nodes.dht.enable", "b", true, {title: "DHT Node enabled"}]
+  - ["nodes.dht.type", "i", 11, {title: "DHT type"}]
+  - ["nodes.dht.pin", "i", 13, {title: "DHT sensor pin"}]
+
+  - ["nodes.dht.props", "o", {title: "DHT driver sensor properties"}]
+  - ["nodes.dht.props.temp", "o", {title: "DHT temperature property definition"}]
+  - ["nodes.dht.props.temp.range", "o", {title: "DHT temperature range"}]
+  - ["nodes.dht.props.temp.range.min", "i", 22, {title: "DHT temperature min range value"}]
+  - ["nodes.dht.props.temp.range.max", "i", 26, {title: "DHT temperature max range value"}]
+  - ["nodes.dht.props.humd", "o", {title: "DHT humidity property definition"}]
+  - ["nodes.dht.props.humd.range", "o", {title: "DHT humidity range"}]
+  - ["nodes.dht.props.humd.range.min", "i", 45, {title: "DHT humidity min range value"}]
+  - ["nodes.dht.props.humd.range.max", "i", 55, {title: "DHT humidity max range value"}]
+
+  - ["nodes.dht.sampling", "o", {title: "DHT Node sampling config"}]
+  - ["nodes.dht.sampling.interval", "i", 1000, {title: "DHT Node sampling interval"}]
+
+  - ["nodes.dht.tele", "o", {title: "DHT Node telemetry config"}]
+  - ["nodes.dht.tele.interval", "i", 30000, {title: "DHT Node telemetry interval"}]
+  - ["nodes.dht.tele.topic", "s", "weather", {title: "DHT Node MQTT topic for telemetry"}]
 
   - ["sntp", "o", {title: "SNTP settings"}]
   - ["sntp.enable", "b", true, {title: "Enable SNTP"}]
@@ -39,13 +72,15 @@ config_schema:
   - ["pir.keep", "i", 30, {title: "Time to keep turn on (seconds)"}]
 
   - ["strip", "o", {title: "Led Strip WS2812 configuration"}]
-  - ["strip.pixels", "i", 30, {title: "Led Strip pixels"}]
+  - ["strip.pixels", "i", 12, {title: "Led Strip pixels"}]
   - ["strip.color", "i", 0x881F78, {title: "Led Strip color"}]
   - ["strip.brightness", "i", 100, {title: "Led Strip brightness"}]
   - ["strip.effect", "i", 0, {title: "Led Strip effect"}]
   - ["strip.speed", "s", "normal", {title: "Led Strip effect speed"}]
+
 libs:
       # common mgos libs
+  - origin: https://github.com/mongoose-os-libs/boards
   - origin: https://github.com/mongoose-os-libs/ca-bundle
   - origin: https://github.com/mongoose-os-libs/i2c
   - origin: https://github.com/mongoose-os-libs/rpc-service-config
