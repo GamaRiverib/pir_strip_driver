@@ -75,6 +75,11 @@ config_schema:
   - ["nodes.photoresistor.tele.interval", "i", 60000, {title: "Photoresistor Node telemetry interval"}]
   - ["nodes.photoresistor.tele.topic", "s", "luminosity", {title: "Photoresistor Node MQTT topic for telemetry"}]
 
+  - ["nodes.neopixel", "o", {title: "Neopixel Node wrapper definition"}]
+  - ["nodes.neopixel.enable", "b", true, {title: "Neopixel Node enabled"}]
+  - ["nodes.neopixel.pin", "i", 2, {title: "Neopixel LedStrip pin"}]
+  - ["nodes.neopixel.pixels", "i", 12, {title: "Neopixel LedStrip num pixels"}]
+
   - ["sntp", "o", {title: "SNTP settings"}]
   - ["sntp.enable", "b", true, {title: "Enable SNTP"}]
   - ["sntp.server", "s", "time.google.com", {title: "Server address"}]
@@ -84,7 +89,6 @@ config_schema:
 
   - ["pins", "o", {title: "Pins configuration"}]
   - ["pins.led", "i", 12, {title: "PIR led pin"}]
-  - ["pins.strip", "i", 2, {title: "Led Strip pin"}]
 
   - ["app", "o", {title: "App custom settings"}]
   - ["app.mode", "i", 0, {title: "Driver operational mode (0 - 4)"}]

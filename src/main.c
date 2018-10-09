@@ -27,8 +27,9 @@
 #include "nvk_nodes.h"
 #include "nvk_nodes_pir.h"
 #include "nvk_nodes_photoresistor.h"
+#include "nvk_nodes_neopixel.h"
 
-#define ORDER MGOS_NEOPIXEL_ORDER_GRB
+// #define ORDER MGOS_NEOPIXEL_ORDER_GRB
 #define CYLON_SIZE 1
 #define TOTAL_EFFECTS 12
 #define SNOW_EFFECT_INDEX 11
@@ -39,14 +40,6 @@
 #define MODE_NIGHT 3
 #define MODE_VIGILANCE 4
 
-typedef struct {
-  int red;
-  int green;
-  int blue;
-} rgb_color;
-
-static struct mgos_neopixel *s_strip = NULL;
-
 static mgos_timer_id effect_timer = MGOS_INVALID_TIMER_ID;
 static mgos_timer_id smooth_timer = MGOS_INVALID_TIMER_ID;
 static mgos_timer_id alert_timer = MGOS_INVALID_TIMER_ID;
@@ -54,16 +47,6 @@ static float last_motion_time = 0;
 static int smooth_brightness = 0;
 
 const char MOTION_ALERT_JSON_FMT[] = "{uptime:%f}";
-
-// TODO: static void get_weather(char *)
-
-static rgb_color get_rgb_color(int color) {
-  rgb_color rgb = { 
-    (color >> 16) & 0xFF, 
-    (color >> 8) & 0xFF,
-    color & 0xFF };
-  return rgb;
-}
 
 static void clear_timers() {
   if(effect_timer != MGOS_INVALID_TIMER_ID) {
@@ -82,12 +65,7 @@ static void clear_timers() {
 
 static void strip_turn_off() {
   clear_timers();
-  mgos_neopixel_clear(s_strip);
-  int num_pixels = mgos_sys_config_get_strip_pixels();
-  for(int p = 0; p < num_pixels; p++) {
-    mgos_neopixel_set(s_strip, p, 0, 0, 0);
-  }
-  mgos_neopixel_show(s_strip);
+  node_neopixel_turn_off();
   mgos_sys_config_set_app_mode(MODE_OFF);
   LOG(LL_INFO, ("Led Strip Turn OFF"));
 }
@@ -99,12 +77,7 @@ static void strip_turn_on() {
     color = 0xFFFFFF;
   }
   rgb_color c = get_rgb_color(color);
-  mgos_neopixel_clear(s_strip);
-  int num_pixels = mgos_sys_config_get_strip_pixels();
-  for(int p = 0; p < num_pixels; p++) {
-    mgos_neopixel_set(s_strip, p, c.red, c.green, c.blue);
-  }
-  mgos_neopixel_show(s_strip);
+  node_neopixel_turn_on(c);
   mgos_sys_config_set_app_mode(MODE_ON);
   LOG(LL_INFO, ("Led Strip Turn ON"));
 }
@@ -113,55 +86,46 @@ static bool is_dark() {
   return node_photoresistor_get_luminosity() <= mgos_sys_config_get_pir_threshold();
 }
 
-static void set_strip_rgb_color(rgb_color c) {
-  int num_pixels = mgos_sys_config_get_strip_pixels();
-  mgos_neopixel_clear(s_strip);
-  for(int p = 0; p < num_pixels; p++) {
-    mgos_neopixel_set(s_strip, p, c.red, c.green, c.blue);
-  }
-  mgos_neopixel_show(s_strip);
-}
-
 static void first_effect() {
   static int s_first_effect_counter = 0;
-  int num_pixels = mgos_sys_config_get_strip_pixels();
+  int num_pixels = mgos_sys_config_get_nodes_neopixel_pixels();
   int p = (s_first_effect_counter++) % num_pixels;
   int r = s_first_effect_counter % 255;
   int g = (s_first_effect_counter * 2) % 255;
   int b = (s_first_effect_counter * s_first_effect_counter) % 255;
-  mgos_neopixel_clear(s_strip);
-  mgos_neopixel_set(s_strip, p, r, g, b);
-  mgos_neopixel_show(s_strip);
+  int h = get_hex_color(r, g, b);
+  rgb_color c = get_rgb_color(h);
+  node_neopixel_set_pixel(p, c);
 }
 
 static void strobe_effect() {
   static bool s_strobe_effect_state = true;
-  int num_pixels = mgos_sys_config_get_strip_pixels();
+  int num_pixels = mgos_sys_config_get_nodes_neopixel_pixels();
   int color = mgos_sys_config_get_strip_color();
   rgb_color c = get_rgb_color(color);
-  mgos_neopixel_clear(s_strip);
+  node_neopixel_clear();
   int p = 0;
   if(s_strobe_effect_state) {
     for(; p < num_pixels; p++) {
-      mgos_neopixel_set(s_strip, p, c.red, c.green, c.blue);
+      node_neopixel_set(p, c.red, c.green, c.blue);
     }
     s_strobe_effect_state = false;
   } else {
     for(;p < num_pixels; p++) {
-      mgos_neopixel_set(s_strip, p, 0, 0, 0);
+      node_neopixel_set(p, 0, 0, 0);
     }
     s_strobe_effect_state = true;
   }
-  mgos_neopixel_show(s_strip);
+  node_neopixel_show();
 }
 
 static void cylon_effect() {
   static bool s_cylon_effect_dir = true;
   static int s_cylon_effect_counter = 0;
-  int num_pixels = mgos_sys_config_get_strip_pixels();
+  int num_pixels = mgos_sys_config_get_nodes_neopixel_pixels();
   int color = mgos_sys_config_get_strip_color();
   rgb_color c = get_rgb_color(color);
-  mgos_neopixel_clear(s_strip);
+  node_neopixel_clear();
   int p = s_cylon_effect_counter;
   if(s_cylon_effect_dir) {
     s_cylon_effect_counter++;
@@ -171,22 +135,14 @@ static void cylon_effect() {
     s_cylon_effect_dir = p <= 1;
   }
   for(int i = 0; i < num_pixels; i++) {
-    mgos_neopixel_set(s_strip, i, 0, 0, 0);
+    node_neopixel_set(i, 0, 0, 0);
   }
-  mgos_neopixel_set(s_strip, p, c.red / 10, c.green / 10, c.blue / 10);
+  node_neopixel_set(p, c.red / 10, c.green / 10, c.blue / 10);
   for(int i = 1; i <= CYLON_SIZE; i++) {
-    mgos_neopixel_set(s_strip, p + i, c.red, c.green, c.blue);
+    node_neopixel_set(p + i, c.red, c.green, c.blue);
   }
-  mgos_neopixel_set(s_strip, p + CYLON_SIZE + 1, c.red / 10, c.green / 10, c.blue / 10);
-  mgos_neopixel_show(s_strip);
-}
-
-static int get_hex_color(int r, int g, int b) {
-  int h = 0x000000;
-  h |= r << 16;
-  h |= g << 8;
-  h |= b;
-  return h;
+  node_neopixel_set(p + CYLON_SIZE + 1, c.red / 10, c.green / 10, c.blue / 10);
+  node_neopixel_show();
 }
 
 static int wheel(int p) {
@@ -206,14 +162,14 @@ static void rainbow_effect() {
   static int s_rainbow_effect_counter = 0;
   if(s_rainbow_effect_counter < 256) {
     int i = s_rainbow_effect_counter++;
-    int num_pixels = mgos_sys_config_get_strip_pixels();
-    mgos_neopixel_clear(s_strip);
+    int num_pixels = mgos_sys_config_get_nodes_neopixel_pixels();
+    node_neopixel_clear();
     for(int p = 0; p < num_pixels; p++) {
       int color = wheel((p + i) & 255);
       rgb_color c = get_rgb_color(color);
-      mgos_neopixel_set(s_strip, p, c.red, c.green, c.blue);
+      node_neopixel_set(p, c.red, c.green, c.blue);
     }
-    mgos_neopixel_show(s_strip);
+    node_neopixel_show();
   } else {
     s_rainbow_effect_counter = 0;
   }
@@ -223,15 +179,15 @@ static void rainbow_cycle_effect() {
   static int s_rainbow_cycle_effect_counter = 0;
   if(s_rainbow_cycle_effect_counter < 256 * 5) {
     int i = s_rainbow_cycle_effect_counter++;
-    int num_pixels = mgos_sys_config_get_strip_pixels();
-    mgos_neopixel_clear(s_strip);
+    int num_pixels = mgos_sys_config_get_nodes_neopixel_pixels();
+    node_neopixel_clear();
     for(int p = 0; p < num_pixels; p++) {
       int k = p * 256 / num_pixels;
       int color = wheel((k + i) & 255);
       rgb_color c = get_rgb_color(color);
-      mgos_neopixel_set(s_strip, p, c.red, c.green, c.blue);
+      node_neopixel_set(p, c.red, c.green, c.blue);
     }
-    mgos_neopixel_show(s_strip);
+    node_neopixel_show();
   } else {
     s_rainbow_cycle_effect_counter = 0;
   }
@@ -266,7 +222,7 @@ static void fade_effect() {
       break;
   }
   rgb_color c = get_rgb_color(color);
-  set_strip_rgb_color(c);
+  node_neopixel_set_all_pixels(c);
 }
 
 static void flash_effect() {
@@ -288,7 +244,7 @@ static void flash_effect() {
   {
     s_flash_effect_counter = 0;
   }
-  set_strip_rgb_color(s_flash_effect_colors[s_flash_effect_counter++]);
+  node_neopixel_set_all_pixels(s_flash_effect_colors[s_flash_effect_counter++]);
 }
 
 static void rbg_loop_effect() {
@@ -324,44 +280,44 @@ static void rbg_loop_effect() {
       break;
   }
   rgb_color c = get_rgb_color(color);
-  set_strip_rgb_color(c);
+  node_neopixel_set_all_pixels(c);
 }
 
 static void twinkle_effect() {
   static int s_twinkle_effect_counter = 0;
 
-  int num_pixels = mgos_sys_config_get_strip_pixels();
+  int num_pixels = mgos_sys_config_get_nodes_neopixel_pixels();
   int color = mgos_sys_config_get_strip_color();
   rgb_color c = get_rgb_color(color);
 
   if (s_twinkle_effect_counter < num_pixels / 3) {
     int p = (int) mgos_rand_range(0, num_pixels - 1);
-    mgos_neopixel_set(s_strip, p, c.red, c.green, c.blue);
-    mgos_neopixel_show(s_strip);
+    node_neopixel_set(p, c.red, c.green, c.blue);
+    node_neopixel_show();
     s_twinkle_effect_counter++;
   } else {
     s_twinkle_effect_counter = 0;
     rgb_color c = get_rgb_color(0);
-    set_strip_rgb_color(c);
+    node_neopixel_set_all_pixels(c);
   }
 }
 
 static void twinkle_random_effect() {
   static int s_twinkle_random_effect_counter = 0;
-  int num_pixels = mgos_sys_config_get_strip_pixels();
+  int num_pixels = mgos_sys_config_get_nodes_neopixel_pixels();
 
   if (s_twinkle_random_effect_counter < num_pixels / 3) {
     int p = (int) mgos_rand_range(0, num_pixels - 1);
     int r = (int) mgos_rand_range(0, 254);
     int g = (int) mgos_rand_range(0, 254);
     int b = (int) mgos_rand_range(0, 254);
-    mgos_neopixel_set(s_strip, p, r, g, b);
-    mgos_neopixel_show(s_strip);
+    node_neopixel_set(p, r, g, b);
+    node_neopixel_show();
     s_twinkle_random_effect_counter++;
   } else {
     s_twinkle_random_effect_counter = 0;
     rgb_color c = get_rgb_color(0);
-    set_strip_rgb_color(c);
+    node_neopixel_set_all_pixels(c);
   }
 }
 
@@ -371,7 +327,7 @@ static void fire_effect() {
   static int sparking = 120;
   int cooldown;
 
-  int num_pixels = mgos_sys_config_get_strip_pixels();
+  int num_pixels = mgos_sys_config_get_nodes_neopixel_pixels();
 
   for(int i = 0; i < num_pixels; i++) {
     cooldown = (int) mgos_rand_range(0, ((cooling * 10) / num_pixels) + 2);
@@ -391,38 +347,37 @@ static void fire_effect() {
     heat[y] = heat[y] + (int) mgos_rand_range(159, 254);
   }
 
-  mgos_neopixel_clear(s_strip);
+  node_neopixel_clear();
   for(int j = 0; j < num_pixels; j++) {
     int t192 = round((heat[j] / 255.0) * 191);
     int heatramp = t192 & 0x3F;
     heatramp <<= 2;
     heatramp = heatramp & 255;
     if(t192 > 0x80) {
-      mgos_neopixel_set(s_strip, j, 255, 255, heatramp);
+      node_neopixel_set(j, 255, 255, heatramp);
     } else if(t192 > 0x40) {
-      mgos_neopixel_set(s_strip, j, 255, heatramp, 0);
+      node_neopixel_set(j, 255, heatramp, 0);
     } else {
-      mgos_neopixel_set(s_strip, j, heatramp, 0, 0);
+      node_neopixel_set(j, heatramp, 0, 0);
     }
   }
 
-  mgos_neopixel_show(s_strip);
+  node_neopixel_show();
 }
 
 static void snow_effect_cb() {
   rgb_color c = get_rgb_color(0x101010);
-  set_strip_rgb_color(c);
-  mgos_neopixel_show(s_strip);
+  node_neopixel_set_all_pixels(c);
 }
 
 static void snow_effect() {
   if(mgos_sys_config_get_strip_effect() == SNOW_EFFECT_INDEX && mgos_sys_config_get_app_mode() == MODE_EFFECT) {
     rgb_color c = get_rgb_color(0x101010);
-    set_strip_rgb_color(c);
-    int num_pixels = mgos_sys_config_get_strip_pixels();
+    node_neopixel_set_all_pixels(c);
+    int num_pixels = mgos_sys_config_get_nodes_neopixel_pixels();
     int p = (int) mgos_rand_range(0, num_pixels - 1);
-    mgos_neopixel_set(s_strip, p, 0xFF, 0xFF, 0xFF);
-    mgos_neopixel_show(s_strip);
+    node_neopixel_set(p, 0xFF, 0xFF, 0xFF);
+    node_neopixel_show();
     mgos_set_timer(20, false, snow_effect_cb, NULL);
     int d = (int) mgos_rand_range(120, 1000);
     mgos_set_timer(d, false, snow_effect, NULL);
@@ -467,12 +422,12 @@ static void start_effect() {
       LOG(LL_INFO, ("Starting RGB loop effect..."));
       break;
     case 8:
-      set_strip_rgb_color(get_rgb_color(0));
+      node_neopixel_set_all_pixels(get_rgb_color(0));
       effect_timer = mgos_set_timer(speed, MGOS_TIMER_REPEAT, twinkle_effect, NULL);
       LOG(LL_INFO, ("Starting twinkle effect..."));
       break;
     case 9:
-      set_strip_rgb_color(get_rgb_color(0));
+      node_neopixel_set_all_pixels(get_rgb_color(0));
       effect_timer = mgos_set_timer(speed, MGOS_TIMER_REPEAT, twinkle_random_effect, NULL);
       LOG(LL_INFO, ("Starting twinkle random effect..."));
       break;
@@ -492,12 +447,12 @@ static void start_effect() {
 
 static void start_night_light() {
   clear_timers();
-  mgos_neopixel_clear(s_strip);
-  int num_pixels = mgos_sys_config_get_strip_pixels();
+  node_neopixel_clear();
+  int num_pixels = mgos_sys_config_get_nodes_neopixel_pixels();
   for(int p = 0; p < num_pixels; p++) {
-    mgos_neopixel_set(s_strip, p, 0, 0, 0);
+    node_neopixel_set(p, 0, 0, 0);
   }
-  mgos_neopixel_show(s_strip);
+  node_neopixel_show();
   mgos_sys_config_set_app_mode(MODE_NIGHT);
   LOG(LL_INFO, ("Starting night light"));
 }
@@ -516,23 +471,13 @@ static void bled_timer_cb(void *args) {
 }
 */
 
-static void led_strip_brightness(int brightness) {
-  brightness = brightness & 255;
-  mgos_neopixel_clear(s_strip);
-  int num_pixels = mgos_sys_config_get_strip_pixels();
-  for(int p = 0; p < num_pixels; p++) {
-    mgos_neopixel_set(s_strip, p, brightness, brightness, brightness);
-  }
-  mgos_neopixel_show(s_strip);
-}
-
 static void smooth_turn_off() {
   smooth_brightness -= 50;
   if(smooth_brightness > 0) {
-    led_strip_brightness(smooth_brightness);
+    node_neopixel_set_brightness(smooth_brightness);
   } else {
     smooth_brightness = 0;
-    led_strip_brightness(0);
+    node_neopixel_set_brightness(0);
     clear_timers();
   }
 }
@@ -551,10 +496,10 @@ static void check_last_motion_time() {
 static void smooth_turn_on() {
   smooth_brightness += 50;
   if(smooth_brightness <= 250) {
-    led_strip_brightness(smooth_brightness);
+    node_neopixel_set_brightness(smooth_brightness);
   } else {
     smooth_brightness = 250;
-    led_strip_brightness(255);
+    node_neopixel_set_brightness(255);
     clear_timers();
     int wait = mgos_sys_config_get_pir_keep() * 1000;
     mgos_set_timer(wait, false, check_last_motion_time, NULL);
@@ -716,10 +661,6 @@ enum mgos_app_init_result mgos_app_init(void) {
 
   // Configure LED indicator for PIR sensor 
   mgos_gpio_set_mode(mgos_sys_config_get_pins_led(), MGOS_GPIO_MODE_OUTPUT);
-
-  // Configure Led Strip WS2812
-  int num_pixels = mgos_sys_config_get_strip_pixels();
-  s_strip = mgos_neopixel_create(mgos_sys_config_get_pins_strip(), num_pixels, ORDER);
 
   // Configure RPC interface
   mgos_rpc_add_handler("Driver.On", rpc_turn_on_cb, NULL);

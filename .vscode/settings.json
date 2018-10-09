@@ -1,5 +1,6 @@
 {
     "files.associations": {
-        "nvk_nodes.h": "c"
+        "nvk_nodes.h": "c",
+        "nvk_nodes_neopixel.h": "c"
     }
 }
