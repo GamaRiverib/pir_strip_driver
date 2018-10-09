@@ -20,18 +20,17 @@
 #include "mgos_time.h"
 #include "mgos_timers.h"
 #include "mgos_gpio.h"
-#include "mgos_adc.h"
 #include "mgos_rpc.h"
 #include "mgos_mqtt.h"
 #include "mgos_neopixel.h"
 #include "mgos_blynk.h"
 #include "nvk_nodes.h"
 #include "nvk_nodes_pir.h"
+#include "nvk_nodes_photoresistor.h"
 
 #define ORDER MGOS_NEOPIXEL_ORDER_GRB
 #define CYLON_SIZE 1
 #define TOTAL_EFFECTS 12
-
 #define SNOW_EFFECT_INDEX 11
 
 #define MODE_OFF 0
@@ -110,16 +109,8 @@ static void strip_turn_on() {
   LOG(LL_INFO, ("Led Strip Turn ON"));
 }
 
-static int get_luminosity() {
-  if(mgos_adc_enable(0)) {
-    return mgos_adc_read(0);
-  }
-  LOG(LL_INFO, ("ADC not available"));
-  return 0;
-}
-
 static bool is_dark() {
-  return get_luminosity() <= mgos_sys_config_get_pir_threshold();
+  return node_photoresistor_get_luminosity() <= mgos_sys_config_get_pir_threshold();
 }
 
 static void set_strip_rgb_color(rgb_color c) {
@@ -624,23 +615,6 @@ static void rpc_turn_off_cb(struct mg_rpc_request_info *ri, const char *args,
   (void) user_data;
 }
 
-static void rpc_set_effect_cb(struct mg_rpc_request_info *ri, const char *args,
-                           const char *src, void *user_data) {
-  int e = 0;
-  LOG(LL_INFO, (args));
-  if(json_scanf(args, strlen(args), ri->args_fmt, &e) == 1) {
-    mgos_sys_config_set_strip_effect(e);
-    mgos_sys_config_set_app_mode(MODE_EFFECT);
-    start_effect();
-    mg_rpc_send_responsef(ri, "{success:true, effect:%d}", e);
-  } else {
-    mg_rpc_send_errorf(ri, -1, "{success:false, message:\"Missing parameter\"}");
-    LOG(LL_INFO, ("Bad parameter: %s", args));
-  }
-  (void) src;
-  (void) user_data;
-}
-
 static void rpc_set_next_effect_cb(struct mg_rpc_request_info *ri, const char *args,
                            const char *src, void *user_data) {
   int e = mgos_sys_config_get_strip_effect();
@@ -731,7 +705,7 @@ enum mgos_app_init_result mgos_app_init(void) {
   if(nodes_init()) {
     LOG(LL_INFO, ("Nodes init succesfully."));
 
-    node_pir_set_pir_toggle_handler(node_pir_toggle_handler, NULL);
+    node_pir_set_pir_toggle_handler(node_pir_toggle_handler);
   } else {
     LOG(LL_INFO, ("Nodes init error."));
   }
@@ -750,7 +724,6 @@ enum mgos_app_init_result mgos_app_init(void) {
   // Configure RPC interface
   mgos_rpc_add_handler("Driver.On", rpc_turn_on_cb, NULL);
   mgos_rpc_add_handler("Driver.Off", rpc_turn_off_cb, NULL);
-  mgos_rpc_add_handler("Driver.Effect", rpc_set_effect_cb, NULL);
   mgos_rpc_add_handler("Driver.Next", rpc_set_next_effect_cb, NULL);
   mgos_rpc_add_handler("Driver.Night", rpc_set_night_light_cb, NULL);
   mgos_rpc_add_handler("Driver.Vigilance", rpc_set_vigilance_cb, NULL);

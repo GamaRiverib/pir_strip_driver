@@ -28,56 +28,42 @@ static node_on_range_handler_t s_node_temp_on_range_handler = NULL;
 static node_out_range_handler_t s_node_temp_out_range_handler = NULL;
 static node_on_range_handler_t s_node_humd_on_range_handler = NULL;
 static node_out_range_handler_t s_node_humd_out_range_handler = NULL;
-static void *s_node_temp_on_range_user_data = NULL;
-static void *s_node_temp_out_range_user_data = NULL;
-static void *s_node_humd_on_range_user_data = NULL;
-static void *s_node_humd_out_range_user_data = NULL;
 
 const char DHT_TELE_JSON_FMT[] = "{dht:{temperature:%d,humidity:%d,uptime:%f}}";
-const char DHT_RPC_STAT_METHOD_NAME[] = "Nodes.DHT.stat";
-const char DHT_RPC_SET_RANGE_MIN_METHOD_NAME[] = "Nodes.DHT.Range.Min";
-const char DHT_RPC_SET_RANGE_MAX_METHOD_NAME[] = "Nodes.DHT.Range.Max";
-const char DHT_RPC_SET_SAMPLING_INTERVAL_METHOD_NAME[] = "Nodes.DHT.Sampling.Interval";
-const char DHT_RPC_SET_TELE_INTERVAL_METHOD_NAME[] = "Nodes.DHT.Tele.Interval";
+const char DHT_RPC_STAT_METHOD_NAME[] = "Nodes.DHT.Stat";
 
 static mgos_timer_id node_dht_samp_int_timer_id = MGOS_INVALID_TIMER_ID;
 static mgos_timer_id node_dht_tele_int_timer_id = MGOS_INVALID_TIMER_ID;
 
-void node_dht_set_temp_on_range_handler(node_on_range_handler_t func, void *user_data) {
+void node_dht_set_temp_on_range_handler(node_on_range_handler_t func) {
     s_node_temp_on_range_handler = func;
-    s_node_temp_on_range_user_data = user_data;
 }
 
-void node_dht_set_temp_out_range_handler(node_out_range_handler_t func, void *user_data) {
+void node_dht_set_temp_out_range_handler(node_out_range_handler_t func) {
     s_node_temp_out_range_handler = func;
-    s_node_temp_out_range_user_data = user_data;
 }
 
-void node_dht_set_humd_on_range_handler(node_on_range_handler_t func, void *user_data) {
+void node_dht_set_humd_on_range_handler(node_on_range_handler_t func) {
     s_node_humd_on_range_handler = func;
-    s_node_humd_on_range_user_data = user_data;
 }
 
-void node_dht_set_humd_out_range_handler(node_out_range_handler_t func, void *user_data) {
+void node_dht_set_humd_out_range_handler(node_out_range_handler_t func) {
     s_node_humd_out_range_handler = func;
-    s_node_humd_out_range_user_data = user_data;
 }
 
-void default_node_on_range_handler(struct node_range_values *values, void *user_data) {
-    LOG(LL_INFO, ("ON RANGE: current=%d min=%d max=%d", values->current, values->min, values->max));
-    (void) user_data;
+void default_node_dht_on_range_handler(struct node_range_values *values, void *user_data) {
+    LOG(LL_INFO, ("%s ON RANGE: current=%d min=%d max=%d", (char *) user_data, values->current, values->min, values->max));
 }
 
-void default_node_out_range_handler(enum node_out_range_event_type ev, struct node_range_values *values, void *user_data) {
+void default_node_dht_out_range_handler(enum node_out_range_event_type ev, struct node_range_values *values, void *user_data) {
     switch(ev) {
         case ABOVE_OF_RANGE:
-            LOG(LL_INFO, ("ABOVE OF RANGE: current=%d min=%d max=%d", values->current, values->min, values->max));
+            LOG(LL_INFO, ("%s ABOVE OF RANGE: current=%d min=%d max=%d", (char *) user_data, values->current, values->min, values->max));
             break;
         case BELOW_OF_RANGE:
-            LOG(LL_INFO, ("BELOW OF RANGE: current=%d min=%d max=%d", values->current, values->min, values->max));
+            LOG(LL_INFO, ("%s BELOW OF RANGE: current=%d min=%d max=%d", (char *) user_data, values->current, values->min, values->max));
             break;
     }
-    (void) user_data;
 }
 
 void node_dht_sampling_handler(void *dht) {
@@ -101,9 +87,9 @@ void node_dht_sampling_handler(void *dht) {
         } else {
             ev = ABOVE_OF_RANGE;
         }
-        s_node_temp_out_range_handler(ev, &temp_values, s_node_temp_out_range_user_data);
+        s_node_temp_out_range_handler(ev, &temp_values, "Temperature");
     } else {
-        s_node_temp_on_range_handler(&temp_values, s_node_temp_on_range_user_data);
+        s_node_temp_on_range_handler(&temp_values, "Temperature");
     }
 
     struct node_range_values humd_values = { .current = h, .min = humd_min, .max = humd_max };
@@ -114,9 +100,9 @@ void node_dht_sampling_handler(void *dht) {
         } else {
             ev = ABOVE_OF_RANGE;
         }
-        s_node_humd_out_range_handler(ev, &humd_values, s_node_humd_out_range_user_data);
+        s_node_humd_out_range_handler(ev, &humd_values, "Humidity");
     } else {
-        s_node_humd_on_range_handler(&humd_values, s_node_humd_on_range_user_data);
+        s_node_humd_on_range_handler(&humd_values, "Humidity");
     }
     
     LOG(LL_INFO, ("Temperature: %d*C \tHumidity: %d%%", (int)t, (int)h));
@@ -153,42 +139,6 @@ void node_dht_rpc_stat_handler(struct mg_rpc_request_info *ri, const char *args,
   (void) src;
 }
 
-void node_dht_rpc_set_range_min_handler(struct mg_rpc_request_info *ri, const char *args,
-                           const char *src, void *dht) {
-    LOG(LL_INFO, (args));
-    mg_rpc_send_responsef(ri, "{success:true}");
-    (void) args;
-    (void) src;
-    (void) dht;
-}
-
-void node_dht_rpc_set_range_max_handler(struct mg_rpc_request_info *ri, const char *args,
-                           const char *src, void *dht) {
-    LOG(LL_INFO, (args));
-    mg_rpc_send_responsef(ri, "{success:true}");
-    (void) args;
-    (void) src;
-    (void) dht;
-}
-
-void node_dht_rpc_set_sampling_interval_handler(struct mg_rpc_request_info *ri, const char *args,
-                           const char *src, void *dht) {
-    LOG(LL_INFO, (args));
-    mg_rpc_send_responsef(ri, "{success:true}");
-    (void) args;
-    (void) src;
-    (void) dht;
-}
-
-void node_dht_rpc_set_tele_interval_handler(struct mg_rpc_request_info *ri, const char *args,
-                           const char *src, void *dht) {
-    LOG(LL_INFO, (args));
-    mg_rpc_send_responsef(ri, "{success:true}");
-    (void) args;
-    (void) src;
-    (void) dht;
-}
-
 bool node_dht_init() {
     bool enabled = mgos_sys_config_get_nodes_dht_enable();
     if(enabled) {
@@ -201,15 +151,11 @@ bool node_dht_init() {
         node_dht_samp_int_timer_id = mgos_set_timer(sampling_interval, MGOS_TIMER_REPEAT, node_dht_sampling_handler, s_node_dht);
         node_dht_tele_int_timer_id = mgos_set_timer(tele_interval, MGOS_TIMER_REPEAT, node_dht_tele_handler, s_node_dht);
         mgos_rpc_add_handler(DHT_RPC_STAT_METHOD_NAME, node_dht_rpc_stat_handler, s_node_dht);
-        mgos_rpc_add_handler(DHT_RPC_SET_RANGE_MIN_METHOD_NAME, node_dht_rpc_set_range_min_handler, s_node_dht);
-        mgos_rpc_add_handler(DHT_RPC_SET_RANGE_MAX_METHOD_NAME, node_dht_rpc_set_range_max_handler, s_node_dht);
-        mgos_rpc_add_handler(DHT_RPC_SET_SAMPLING_INTERVAL_METHOD_NAME, node_dht_rpc_set_sampling_interval_handler, s_node_dht);
-        mgos_rpc_add_handler(DHT_RPC_SET_TELE_INTERVAL_METHOD_NAME, node_dht_rpc_set_tele_interval_handler, s_node_dht);
 
-        node_dht_set_temp_on_range_handler(default_node_on_range_handler, NULL);
-        node_dht_set_temp_out_range_handler(default_node_out_range_handler, NULL);
-        node_dht_set_humd_on_range_handler(default_node_on_range_handler, NULL);
-        node_dht_set_humd_out_range_handler(default_node_out_range_handler, NULL);
+        node_dht_set_temp_on_range_handler(default_node_dht_on_range_handler);
+        node_dht_set_temp_out_range_handler(default_node_dht_out_range_handler);
+        node_dht_set_humd_on_range_handler(default_node_dht_on_range_handler);
+        node_dht_set_humd_out_range_handler(default_node_dht_out_range_handler);
     }
     return enabled;
 }

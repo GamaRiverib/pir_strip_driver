@@ -58,6 +58,23 @@ config_schema:
   - ["nodes.pir.stat", "o", {title: "PIR State config"}]
   - ["nodes.pir.stat.topic", "s", "pir", {title: "PIR Node MQTT topic for state"}]
 
+  - ["nodes.photoresistor", "o", {title: "Photoresistor Node wrapper definition"}]
+  - ["nodes.photoresistor.enable", "b", true, {title: "Photoresistor Node enabled"}]
+  - ["nodes.photoresistor.pin", "i", 0, {title: "Photoresistor sensor pin"}]
+
+  - ["nodes.photoresistor.props", "o", {title: "Photoresistor driver sensor properties"}]
+  - ["nodes.photoresistor.props.lumi", "o", {title: "Photoresistor luminosity property definition"}]
+  - ["nodes.photoresistor.props.lumi.range", "o", {title: "Photoresistor luminosity range"}]
+  - ["nodes.photoresistor.props.lumi.range.min", "i", 120, {title: "Photoresistor luminosity min range value"}]
+  - ["nodes.photoresistor.props.lumi.range.max", "i", 1024, {title: "Photoresistor luminosity max range value"}]
+  
+  - ["nodes.photoresistor.sampling", "o", {title: "Photoresistor Node sampling config"}]
+  - ["nodes.photoresistor.sampling.interval", "i", 5000, {title: "Photoresistor Node sampling interval"}]
+
+  - ["nodes.photoresistor.tele", "o", {title: "Photoresistor Node telemetry config"}]
+  - ["nodes.photoresistor.tele.interval", "i", 60000, {title: "Photoresistor Node telemetry interval"}]
+  - ["nodes.photoresistor.tele.topic", "s", "luminosity", {title: "Photoresistor Node MQTT topic for telemetry"}]
+
   - ["sntp", "o", {title: "SNTP settings"}]
   - ["sntp.enable", "b", true, {title: "Enable SNTP"}]
   - ["sntp.server", "s", "time.google.com", {title: "Server address"}]

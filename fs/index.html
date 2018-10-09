@@ -6,7 +6,7 @@
         </style>
         
         <style>
-            .lds-ripple,.loading{display:inline-block}body{margin:0}.footer{position:fixed;left:0;bottom:0;width:100%;background-color:#9b4dca;color:#fff;text-align:center;height:50px}.lds-ripple{position:relative;width:64px;height:64px}.lds-ripple div{position:absolute;border:4px solid #9b4dca;opacity:1;border-radius:50%;animation:lds-ripple 1s cubic-bezier(0,.2,.8,1) infinite}.lds-ripple div:nth-child(2),.loading div:nth-child(2){animation-delay:-.5s}@keyframes lds-ripple{0%{top:28px;left:28px;width:0;height:0;opacity:1}100%{top:-1px;left:-1px;width:58px;height:58px;opacity:0}}.loading,.loading:before{position:fixed;top:0;left:0}.loading{z-index:999;overflow:show;margin:auto;bottom:0;right:0;width:64px;height:64px}.loading:before{content:'';width:100%;height:100%;background-color:rgba(0,0,0,.3)}.loading:not(:required){font:0/0 a;color:transparent;text-shadow:none;background-color:transparent;border:0}.loading:not(:required):after{content:'';font-size:10px;width:1em;height:1em;margin-top:-.5em;position:absolute;border:4px solid #9b4dca;opacity:1;border-radius:50%;animation:lds-ripple 1s cubic-bezier(0,.2,.8,1) infinite}.navbar{font-size:small}.navbar ul{list-style-type:none;height:50px;margin:0;padding:0;overflow:hidden;background-color:#333}.navbar ul li{float:left}.navbar li a{display:block;color:#fff;text-align:center;padding:14px 16px;text-decoration:none}.navbar li a:hover:not(.active){background-color:#111}.navbar .active{background-color:#9b4dca}.navbar li a:disabled{color:#777}.view_title{padding:10px}.container{padding:15px 2rem}hr{margin:10px}
+            .lds-ripple,.loading{display:inline-block}body{margin:0}.footer{position:fixed;left:0;bottom:0;width:100%;background-color:#9b4dca;color:#fff;text-align:center;height:50px}.lds-ripple{position:relative;width:64px;height:64px}.lds-ripple div{position:absolute;border:4px solid #9b4dca;opacity:1;border-radius:50%;animation:lds-ripple 1s cubic-bezier(0,.2,.8,1) infinite}.lds-ripple div:nth-child(2),.loading div:nth-child(2){animation-delay:-.5s}@keyframes lds-ripple{0%{top:28px;left:28px;width:0;height:0;opacity:1}100%{top:-1px;left:-1px;width:58px;height:58px;opacity:0}}.loading,.loading:before{position:fixed;top:0;left:0}.loading{z-index:999;overflow:show;margin:auto;bottom:0;right:0;width:64px;height:64px}.loading:before{content:'';width:100%;height:100%;background-color:rgba(0,0,0,.3)}.loading:not(:required){font:0/0 a;color:transparent;text-shadow:none;background-color:transparent;border:0}.loading:not(:required):after{content:'';font-size:10px;width:1em;height:1em;margin-top:-.5em;position:absolute;border:4px solid #9b4dca;opacity:1;border-radius:50%;animation:lds-ripple 1s cubic-bezier(0,.2,.8,1) infinite}.navbar{font-size:small}.navbar ul{list-style-type:none;height:50px;margin:0;padding:0;overflow:hidden;background-color:#333}.navbar ul li{float:left}.navbar li a{display:block;color:#fff;text-align:center;padding:14px 16px;text-decoration:none}.navbar li a:hover:not(.active){background-color:#111}.navbar .active{background-color:#9b4dca}.navbar li a:disabled{color:#777}.view_title{padding:10px}.container{padding:15px 2rem}hr{margin:10px}.menu .button{width:100%}.menu .row{margin:10px 0}
         </style>
     </head>
     <body>
@@ -30,16 +30,50 @@
         </div>
         <div class="navbar" hidden>
             <ul>
-                <li><a class="active" id="nav_info" href="#info">Device</a></li>
-                <li><a id="nav_pins" href="#pins">Pins</a></li>
-                <li><a id="nav_wifi" href="#wifi">WiFi</a></li>
-                <li><a id="nav_mqtt" href="#mqtt">MQTT</a></li>
-                <li><a id="nav_blynk" href="#blynk">Blynk</a></li>
+                <li><a id="back_btn" href="#back">Back</a></li>
             </ul>
         </div>
         <div id="views_container" class="container" hidden>
             <div class="row" style="padding-bottom: 45px;">
                 <div class="column">
+                    <div id="view_menu" style="align-items: center;" class="menu" hidden>
+                        <h4>Menu</h4>
+                        <div class="row">
+                            <div class="column">
+                                <a class="button" href="#info">Device info</a>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="column">
+                                <a class="button" href="#nodes">Nodes</a>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="column">
+                                <a class="button" href="#pins">Pins</a>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="column">
+                                <a class="button" href="#wifi">WiFi</a>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="column">
+                                <a class="button" href="#mqtt">MQTT</a>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="column">
+                                <a class="button" href="#blynk">Blynk</a>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="column">
+                                <a class="button" href="#ota">OTA</a>
+                            </div>
+                        </div>
+                    </div>
                     <div id="view_info" hidden>
                         <h4>Hardware info</h4>
                         <form>
@@ -80,6 +114,9 @@
                                 </tr>
                             </tbody>
                         </table>
+                    </div>
+                    <div id="view_nodes" hidden>
+                        <h4>Nodes</h4>
                     </div>
                     <div id="view_pins" hidden>
                         <h4>Pins</h4>
@@ -176,18 +213,28 @@
                             </fieldset>
                         </form>
                     </div>
-                </div>
-            </div>
-            <div class="row footer">
-                <div class="column">
-                    <div class="float-right" style="padding-top: 5px;">
-                        <input id="submit_btn" class="button-primary" type="submit" value="Send" disabled />
+                    <div id="view_ota" hidden>
+                        <h4>OTA</h4>
+                        <form>
+                            <fieldset>
+                                <label for="ota.file">File</label>
+                                <input type="file" placeholder="Zip file" id="ota.file" accept="application/zip" />
+                                <input id="upload_ota_file_btn" class="button-primary" type="submit" value="Apply">
+                            </fieldset>
+                        </form>
                     </div>
                 </div>
             </div>
         </div>
+        <div class="footer" hidden>
+            <div class="column">
+                <div class="float-right" style="padding-top: 5px;">
+                    <input id="submit_btn" class="button-primary" type="submit" value="Send" disabled />
+                </div>
+            </div>
+        </div>
         <script>
-            var connected=!1,url="/rpc/",data=null,configuration={},sys=null,views=["connecting","info","wifi","mqtt","blynk","pins"],views_container=document.getElementById("views_container"),navbar=document.getElementsByClassName("navbar")[0],navbar_items=navbar.getElementsByTagName("a"),loading_mask=document.getElementById("loading_mask"),loading_msg=document.getElementsByClassName("loading")[0],view_connecting=document.getElementById("view_connecting"),view_connecting_msg=document.getElementById("connecting_message"),view_connecting_help=document.getElementById("connecting_help"),view_info=document.getElementById("view_info"),submit_btn=document.getElementById("submit_btn"),input_device_id=document.getElementById("device.id"),show_view_event=new Event("on_show_view"),connect_retry_count=6,wifi_ap_list=[];function showActive(e){for(let e=0;e<navbar_items.length;e++)navbar_items[e].classList.remove("active");let t=document.getElementById("nav_"+e);null!==t&&(t.classList.add("active"),navbar.removeAttribute("hidden"),views_container.removeAttribute("hidden"))}function showView(e){for(let e=0;e<views.length;e++){let t=document.getElementById("view_"+views[e]);null!==t&&(t.hidden=!0)}let t=document.getElementById("view_"+e);null!==t&&(t.hidden=!1,t.dispatchEvent(show_view_event)),showActive(e)}showView(connected?views[1]:views[0]);for(let e=0;e<navbar_items.length;e++){let t=navbar_items[e];t.onclick=function(e){if(t.hasAttribute("disabled"))return e.preventDefault();showView(t.getAttribute("href").substr(1))}}function showMask(e){connected?(loading_msg.innerHTML=e,loading_mask.hidden=!1):(view_connecting_msg.innerHTML=e,view_connecting.hidden=!1)}function hideMask(){loading_msg.innerHTML="",view_connecting_msg.innerHTML="",view_connecting.hidden=!0,loading_mask.hidden=!0}function getJson(e,t,n){let i=new XMLHttpRequest;function o(e){hideMask(),t({error:e})}i.open("GET",e,!0),i.onreadystatechange=function(){4===this.readyState&&this.status>=200&&this.status<400&&t(null,JSON.parse(this.response))},i.ontimeout=o,i.onerror=o,i.onloadend=hideMask,showMask(n),i.send()}function postJson(e,t,n,i){let o=new XMLHttpRequest;function a(e){hideMask(),n({error:e})}o.open("POST",e,!0),o.onreadystatechange=function(){4===this.readyState&&this.status>=200&&this.status<400&&n(null,JSON.parse(this.response))},o.ontimeout=a,o.onerror=a,o.onloadend=hideMask,showMask(i),o.send(t)}function setPinMap(e){if(e&&"object"==typeof e){let t=document.getElementById("pinmap"),n=t.getElementsByTagName("tbody")[0];t.removeAttribute("hidden");for(let t in e){let i=n.insertRow(n.rows.length),o=i.insertCell(0),a=document.createTextNode(t);o.appendChild(a);let s=i.insertCell(1),c=document.createElement("input");c.type="number",c.name=t,c.min=0,c.max=16,c.value=parseInt(e[t]),s.appendChild(c)}}}function setInputValueById(e,t){let n=document.getElementById(e);n&&("boolean"==typeof t?n.checked=t:n.value=t,n.onchange=function(n){n.target.value!=configuration[e]?(null===data&&(data={}),data[e]="boolean"==typeof t?n.target.checked:n.target.value,submit_btn.removeAttribute("disabled")):data&&data[e]&&delete data[e]})}function setWifiConfig(e){if("object"==typeof e){if(e.sta)for(let t in e.sta)setInputValueById("wifi.sta."+t,e.sta[t]);if(e.sta1)for(let t in e.sta1)setInputValueById("wifi.sta1."+t,e.sta1[t]);if(e.sta2)for(let t in e.sta2)setInputValueById("wifi.sta2."+t,e.sta2[t]);if(e.ap)for(let t in e.ap)setInputValueById("wifi.ap."+t,e.ap[t])}}function setConfig(e,t){if("object"==typeof t)for(let n in t)setInputValueById(e+"."+n,t[n])}function connectToDevice(){getJson(url+"Config.Get",function(e,t){if(null===e)connected=!0,configuration=t,input_device_id.value=configuration.device.id,setPinMap(configuration.pins),setWifiConfig(configuration.wifi),setConfig("mqtt",configuration.mqtt),setConfig("blynk",configuration.blynk),showView("info"),view_connecting_help.remove();else{console.log("Error trying to get device configuration. Connect to your device Wi-Fi AP.");let e=connect_retry_count,t=setInterval(function(){--e>=0?showMask("Try to connect in "+e+" seconds..."):(clearInterval(t),connectToDevice())},1e3)}},"Waiting for device...")}view_info.addEventListener("on_show_view",function(e){null===sys&&getJson(url+"Sys.GetInfo",function(e,t){if(null!==e)return void console.log("Error trying to get system information.");sys=t;let n=Math.floor((sys.fs_size-sys.fs_free)/1e3)+" KB / "+Math.floor(sys.fs_size/1e3)+" KB",i=Math.floor(sys.ram_free/1e3)+" KB / "+Math.floor(sys.ram_size/1e3)+" KB";document.getElementById("sys.app").innerText=sys.app,document.getElementById("sys.fw_id").innerText=sys.fw_id,document.getElementById("sys.fw_version").innerText=sys.fw_version,document.getElementById("sys.arch").innerText=sys.arch,document.getElementById("sys.fs").innerText=n,document.getElementById("sys.ram").innerText=i,document.getElementById("sys.mac").innerText=sys.mac},"Get device information...")},!1),input_device_id.onchange=function(e){e.target.value!=configuration.device.id?(null===data&&(data={device:{}}),data.device.id=e.target.value,submit_btn.removeAttribute("disabled")):data&&data.device&&data.device.id&&delete data.device.id},submit_btn.onclick=function(e){e.preventDefault(),null!==data&&postJson(url+"Config.Set",JSON.stringify({config:data}),function(e,t){if(e)return console.log(e),void alert("Error sending the new configuration. Try again later.");postJson(url+"Config.Save",JSON.stringify({reboot:!0}),function(e,t){if(e)return console.log(e),void alert("Error saving the new configuration. Try again later.");for(let e in data)configuration[e]=data[e];data=null,submit_btn.setAttribute("disabled",!0),alert("Device is restarted. Please wait a moment until you connect again."),location.reload()},"Saving configuration...")},"Sending configuration...")},connectToDevice();
+            var connected=!1,url="/rpc/",data=null,configuration={},sys=null,views=["connecting","menu","info","nodes","pins","wifi","mqtt","blynk","ota"],views_container=document.getElementById("views_container"),navbar=document.getElementsByClassName("navbar")[0],footer=document.getElementsByClassName("footer")[0],back_btn=document.getElementById("back_btn"),menu=document.getElementsByClassName("menu")[0],menu_items=menu.getElementsByTagName("a"),loading_mask=document.getElementById("loading_mask"),loading_msg=document.getElementsByClassName("loading")[0],view_connecting=document.getElementById("view_connecting"),view_connecting_msg=document.getElementById("connecting_message"),view_connecting_help=document.getElementById("connecting_help"),view_info=document.getElementById("view_info"),submit_btn=document.getElementById("submit_btn"),upload_ota_file_btn=document.getElementById("upload_ota_file_btn"),input_device_id=document.getElementById("device.id"),show_view_event=new Event("on_show_view"),connect_retry_count=6,wifi_ap_list=[];function showView(e){for(let e=0;e<views.length;e++){let t=document.getElementById("view_"+views[e]);null!==t&&(t.hidden=!0)}let t=document.getElementById("view_"+e);null!==t&&(t.hidden=!1,t.dispatchEvent(show_view_event)),views_container.removeAttribute("hidden")}showView(connected?views[1]:views[0]);for(let e=0;e<menu_items.length;e++){let t=menu_items[e];t.onclick=function(e){if(e.preventDefault(),t.hasAttribute("disabled"))return;let n=t.getAttribute("href").substr(1);navbar.removeAttribute("hidden"),footer.removeAttribute("hidden"),showView(n)}}function showMask(e){connected?(loading_msg.innerHTML=e,loading_mask.hidden=!1):(view_connecting_msg.innerHTML=e,view_connecting.hidden=!1)}function hideMask(){loading_msg.innerHTML="",view_connecting_msg.innerHTML="",view_connecting.hidden=!0,loading_mask.hidden=!0}function getJson(e,t,n){let i=new XMLHttpRequest;function o(e){hideMask(),t({error:e})}i.open("GET",e,!0),i.onreadystatechange=function(){4===this.readyState&&this.status>=200&&this.status<400&&t(null,JSON.parse(this.response))},i.ontimeout=o,i.onerror=o,i.onloadend=hideMask,showMask(n),i.send()}function postJson(e,t,n,i){let o=new XMLHttpRequest;function a(e){hideMask(),n({error:e})}o.open("POST",e,!0),o.onreadystatechange=function(){4===this.readyState&&this.status>=200&&this.status<400&&n(null,JSON.parse(this.response))},o.ontimeout=a,o.onerror=a,o.onloadend=hideMask,showMask(i),o.send(t)}function setPinMap(e){if(e&&"object"==typeof e){let t=document.getElementById("pinmap"),n=t.getElementsByTagName("tbody")[0];t.removeAttribute("hidden");for(let t in e){let i=n.insertRow(n.rows.length),o=i.insertCell(0),a=document.createTextNode(t);o.appendChild(a);let s=i.insertCell(1),d=document.createElement("input");d.type="number",d.name=t,d.min=0,d.max=16,d.value=parseInt(e[t]),s.appendChild(d)}}}function setInputValueById(e,t){let n=document.getElementById(e);n&&("boolean"==typeof t?n.checked=t:n.value=t,n.onchange=function(n){n.target.value!=configuration[e]?(null===data&&(data={}),data[e]="boolean"==typeof t?n.target.checked:n.target.value,submit_btn.removeAttribute("disabled")):data&&data[e]&&delete data[e]})}function setWifiConfig(e){if("object"==typeof e){if(e.sta)for(let t in e.sta)setInputValueById("wifi.sta."+t,e.sta[t]);if(e.sta1)for(let t in e.sta1)setInputValueById("wifi.sta1."+t,e.sta1[t]);if(e.sta2)for(let t in e.sta2)setInputValueById("wifi.sta2."+t,e.sta2[t]);if(e.ap)for(let t in e.ap)setInputValueById("wifi.ap."+t,e.ap[t])}}function setConfig(e,t){if("object"==typeof t)for(let n in t)setInputValueById(e+"."+n,t[n])}function connectToDevice(){getJson(url+"Config.Get",function(e,t){if(null===e)connected=!0,configuration=t,input_device_id.value=configuration.device.id,setPinMap(configuration.pins),setWifiConfig(configuration.wifi),setConfig("mqtt",configuration.mqtt),setConfig("blynk",configuration.blynk),showView("menu"),view_connecting_help.remove();else{console.log("Error trying to get device configuration. Connect to your device Wi-Fi AP.");let e=connect_retry_count,t=setInterval(function(){--e>=0?showMask("Try to connect in "+e+" seconds..."):(clearInterval(t),connectToDevice())},1e3)}},"Waiting for device...")}view_info.addEventListener("on_show_view",function(e){null===sys&&getJson(url+"Sys.GetInfo",function(e,t){if(null!==e)return void console.log("Error trying to get system information.");sys=t;let n=Math.floor((sys.fs_size-sys.fs_free)/1e3)+" KB / "+Math.floor(sys.fs_size/1e3)+" KB",i=Math.floor(sys.ram_free/1e3)+" KB / "+Math.floor(sys.ram_size/1e3)+" KB";document.getElementById("sys.app").innerText=sys.app,document.getElementById("sys.fw_id").innerText=sys.fw_id,document.getElementById("sys.fw_version").innerText=sys.fw_version,document.getElementById("sys.arch").innerText=sys.arch,document.getElementById("sys.fs").innerText=n,document.getElementById("sys.ram").innerText=i,document.getElementById("sys.mac").innerText=sys.mac},"Get device information...")},!1),input_device_id.onchange=function(e){e.target.value!=configuration.device.id?(null===data&&(data={device:{}}),data.device.id=e.target.value,submit_btn.removeAttribute("disabled")):data&&data.device&&data.device.id&&delete data.device.id},back_btn.onclick=function(e){e.preventDefault(),navbar.setAttribute("hidden",!0),footer.setAttribute("hidden",!0),showView("menu")},submit_btn.onclick=function(e){e.preventDefault(),null!==data&&postJson(url+"Config.Set",JSON.stringify({config:data}),function(e,t){if(e)return console.log(e),void alert("Error sending the new configuration. Try again later.");postJson(url+"Config.Save",JSON.stringify({reboot:!0}),function(e,t){if(e)return console.log(e),void alert("Error saving the new configuration. Try again later.");for(let e in data)configuration[e]=data[e];data=null,submit_btn.setAttribute("disabled",!0),alert("Device is restarted. Please wait a moment until you connect again."),location.reload()},"Saving configuration...")},"Sending configuration...")},upload_ota_file_btn.onclick=function(e){e.preventDefault();let t=document.getElementById("ota.file");var n=new FormData;n.append("otafile",t.files[0]);let i=new XMLHttpRequest;i.addEventListener("progress",function(e){var t=e.position||e.loaded,n=e.totalSize||e.total;console.log("xhr progress: "+Math.floor(t/n*1e3)/10+"%")},!1),i.upload&&(i.upload.onprogress=function(e){var t=e.position||e.loaded,n=e.totalSize||e.total;console.log("xhr.upload progress: "+t+" / "+n+" = "+Math.floor(t/n*1e3)/10+"%")}),i.onreadystatechange=function(e){4===this.readyState&&this.status>=200&&this.status<400&&console.log(["xhr upload complete",e])};let o=url.substr(0,url.length-4)+"upload";i.open("POST",o,!0),i.setRequestHeader("Content-Type","multipart/form-data"),i.send(n)},connectToDevice();
         </script>
     </body>
 </html>

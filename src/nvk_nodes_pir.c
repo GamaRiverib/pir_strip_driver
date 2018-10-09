@@ -23,7 +23,6 @@
 
 static mgos_timer_id node_pir_samp_int_timer_id = MGOS_INVALID_TIMER_ID;
 static node_switch_handler_t s_node_pir_toggle_handler = NULL;
-static void *s_node_pir_toggle_user_data = NULL;
 
 static int s_node_pir_state = 0;
 
@@ -34,15 +33,14 @@ void default_node_pir_toggle_handler(int value, void *user_data) {
     (void) user_data;
 }
 
-void node_pir_set_pir_toggle_handler(node_switch_handler_t func, void *user_data) {
+void node_pir_set_pir_toggle_handler(node_switch_handler_t func) {
     s_node_pir_toggle_handler = func;
-    s_node_pir_toggle_user_data = user_data;
 }
 
 void node_pir_sampling_handler(void *args) {
     bool state = mgos_gpio_read(mgos_sys_config_get_nodes_pir_pin());
     if (state != s_node_pir_state) {
-        s_node_pir_toggle_handler(state, s_node_pir_toggle_user_data);
+        s_node_pir_toggle_handler(state, NULL);
         const char *topic = mgos_sys_config_get_nodes_pir_stat_topic();
         mgos_mqtt_pubf(topic, 1, false, PIR_STAT_JSON_FMT, state, mgos_uptime());
     }
@@ -58,7 +56,7 @@ bool node_pir_init() {
         int sampling_interval = mgos_sys_config_get_nodes_pir_sampling_interval();
         mgos_gpio_set_mode(pin, MGOS_GPIO_MODE_INPUT);
         node_pir_samp_int_timer_id = mgos_set_timer(sampling_interval, MGOS_TIMER_REPEAT, node_pir_sampling_handler, NULL);
-        node_pir_set_pir_toggle_handler(default_node_pir_toggle_handler, NULL);
+        node_pir_set_pir_toggle_handler(default_node_pir_toggle_handler);
     }
     return enabled;
 }

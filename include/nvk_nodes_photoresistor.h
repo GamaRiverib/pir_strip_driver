@@ -23,19 +23,23 @@
 #include "nvk_nodes.h"
 #include "mgos_rpc.h"
 
-#ifndef NVK_LIBS_NODES_INCLUDE_NVK_NODES_PIR_H_
-#define NVK_LIBS_NODES_INCLUDE_NVK_NODES_PIR_H_
+#ifndef NVK_LIBS_NODES_INCLUDE_NVK_NODES_PHOTO_RESISTOR_H_
+#define NVK_LIBS_NODES_INCLUDE_NVK_NODES_PHOTO_RESISTOR_H_
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-bool node_pir_init();
-void node_pir_sampling_handler();
-void node_pir_set_pir_toggle_handler(node_switch_handler_t func);
+bool node_photoresistor_init();
+int node_photoresistor_get_luminosity();
+void node_photoresistor_sampling_handler(void *dht);
+void node_photoresistor_tele_handler(void *dht);
+void node_photoresistor_rpc_stat_handler(struct mg_rpc_request_info *ri, const char *args, const char *src, void *dht);
+void node_photoresistor_set_lum_on_range_handler(node_on_range_handler_t func);
+void node_photoresistor_set_lum_out_range_handler(node_out_range_handler_t func);
 
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */
 
-#endif /* NVK_LIBS_NODES_INCLUDE_NVK_NODES_PIR_H_ */
+#endif /* NVK_LIBS_NODES_INCLUDE_NVK_NODES_PHOTO_RESISTOR_H_ */
