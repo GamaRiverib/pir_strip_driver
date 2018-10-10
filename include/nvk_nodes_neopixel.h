@@ -53,6 +53,8 @@ void node_neopixel_clear();
 
 void node_neopixel_set(int, int, int, int);
 
+void node_neopixe_set_all(int, int, int);
+
 void node_neopixel_show();
 
 bool node_neopixel_init();

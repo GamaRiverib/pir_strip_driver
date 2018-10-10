@@ -78,6 +78,13 @@ void node_neopixel_set(int pixel, int r, int g, int b) {
     mgos_neopixel_set(s_node_neopixel, pixel, r, g, b);
 }
 
+void node_neopixe_set_all(int r, int g, int b) {
+    int num_pixels = mgos_sys_config_get_nodes_neopixel_pixels();
+    for(int p = 0; p < num_pixels; p++) {
+        mgos_neopixel_set(s_node_neopixel, p, r, g, b);
+    }
+}
+
 void node_neopixel_show() {
     mgos_neopixel_show(s_node_neopixel);
 }

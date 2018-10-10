@@ -28,8 +28,8 @@
 #include "nvk_nodes_photoresistor.h"
 #include "nvk_nodes_neopixel.h"
 #include "effect_strobe.h"
+#include "effect_cylon.h"
 
-#define CYLON_SIZE 1
 #define TOTAL_EFFECTS 12
 #define SNOW_EFFECT_INDEX 11
 
@@ -46,6 +46,7 @@ static float last_motion_time = 0;
 static int smooth_brightness = 0;
 
 static strobe_data s_strobe_data = { 0 };
+static cylon_data s_cylon_data = { 0 };
 
 const char MOTION_ALERT_JSON_FMT[] = "{uptime:%f}";
 
@@ -97,53 +98,6 @@ static void first_effect() {
   int h = get_hex_color(r, g, b);
   rgb_color c = get_rgb_color(h);
   node_neopixel_set_pixel(p, c);
-}
-
-/*static void strobe_effect() {
-  static bool s_strobe_effect_state = true;
-  int num_pixels = mgos_sys_config_get_nodes_neopixel_pixels();
-  int color = mgos_sys_config_get_strip_color();
-  rgb_color c = get_rgb_color(color);
-  node_neopixel_clear();
-  int p = 0;
-  if(s_strobe_effect_state) {
-    for(; p < num_pixels; p++) {
-      node_neopixel_set(p, c.red, c.green, c.blue);
-    }
-    s_strobe_effect_state = false;
-  } else {
-    for(;p < num_pixels; p++) {
-      node_neopixel_set(p, 0, 0, 0);
-    }
-    s_strobe_effect_state = true;
-  }
-  node_neopixel_show();
-}*/
-
-static void cylon_effect() {
-  static bool s_cylon_effect_dir = true;
-  static int s_cylon_effect_counter = 0;
-  int num_pixels = mgos_sys_config_get_nodes_neopixel_pixels();
-  int color = mgos_sys_config_get_strip_color();
-  rgb_color c = get_rgb_color(color);
-  node_neopixel_clear();
-  int p = s_cylon_effect_counter;
-  if(s_cylon_effect_dir) {
-    s_cylon_effect_counter++;
-    s_cylon_effect_dir = p < (num_pixels - CYLON_SIZE - 3); // TODO: 2?
-  } else {
-    s_cylon_effect_counter--;
-    s_cylon_effect_dir = p <= 1;
-  }
-  for(int i = 0; i < num_pixels; i++) {
-    node_neopixel_set(i, 0, 0, 0);
-  }
-  node_neopixel_set(p, c.red / 10, c.green / 10, c.blue / 10);
-  for(int i = 1; i <= CYLON_SIZE; i++) {
-    node_neopixel_set(p + i, c.red, c.green, c.blue);
-  }
-  node_neopixel_set(p + CYLON_SIZE + 1, c.red / 10, c.green / 10, c.blue / 10);
-  node_neopixel_show();
 }
 
 static int wheel(int p) {
@@ -401,7 +355,8 @@ static void start_effect() {
       break;
     case 2:
       LOG(LL_INFO, ("Starting cylon effect..."));
-      effect_timer = mgos_set_timer(speed / 4 * 3, MGOS_TIMER_REPEAT, cylon_effect, NULL);
+      s_cylon_data.color = mgos_sys_config_get_strip_color();
+      effect_timer = mgos_set_timer(speed / 4 * 3, MGOS_TIMER_REPEAT, cylon_effect, &s_cylon_data);
       break;
     case 3:
       LOG(LL_INFO, ("Starting rainbow effect..."));
@@ -462,7 +417,8 @@ static void start_night_light() {
 static void start_vigilance() {
   clear_timers();
   int speed = 100; // TODO
-  effect_timer = mgos_set_timer(speed, MGOS_TIMER_REPEAT, cylon_effect, NULL);
+  s_cylon_data.color = mgos_sys_config_get_strip_color();
+  effect_timer = mgos_set_timer(speed, MGOS_TIMER_REPEAT, cylon_effect, &s_cylon_data);
   mgos_sys_config_set_app_mode(MODE_VIGILANCE);
 }
 
