@@ -22,14 +22,13 @@
 #include "mgos_gpio.h"
 #include "mgos_rpc.h"
 #include "mgos_mqtt.h"
-#include "mgos_neopixel.h"
 #include "mgos_blynk.h"
 #include "nvk_nodes.h"
 #include "nvk_nodes_pir.h"
 #include "nvk_nodes_photoresistor.h"
 #include "nvk_nodes_neopixel.h"
+#include "effect_strobe.h"
 
-// #define ORDER MGOS_NEOPIXEL_ORDER_GRB
 #define CYLON_SIZE 1
 #define TOTAL_EFFECTS 12
 #define SNOW_EFFECT_INDEX 11
@@ -45,6 +44,8 @@ static mgos_timer_id smooth_timer = MGOS_INVALID_TIMER_ID;
 static mgos_timer_id alert_timer = MGOS_INVALID_TIMER_ID;
 static float last_motion_time = 0;
 static int smooth_brightness = 0;
+
+static strobe_data s_strobe_data = { 0 };
 
 const char MOTION_ALERT_JSON_FMT[] = "{uptime:%f}";
 
@@ -98,7 +99,7 @@ static void first_effect() {
   node_neopixel_set_pixel(p, c);
 }
 
-static void strobe_effect() {
+/*static void strobe_effect() {
   static bool s_strobe_effect_state = true;
   int num_pixels = mgos_sys_config_get_nodes_neopixel_pixels();
   int color = mgos_sys_config_get_strip_color();
@@ -117,7 +118,7 @@ static void strobe_effect() {
     s_strobe_effect_state = true;
   }
   node_neopixel_show();
-}
+}*/
 
 static void cylon_effect() {
   static bool s_cylon_effect_dir = true;
@@ -390,54 +391,55 @@ static void start_effect() {
   int speed = 200; // TODO: config speed
   switch(effect) {
     case 0:
-      effect_timer = mgos_set_timer(speed / 4 * 3, MGOS_TIMER_REPEAT, first_effect, NULL);
       LOG(LL_INFO, ("Starting first effect..."));
+      effect_timer = mgos_set_timer(speed / 4 * 3, MGOS_TIMER_REPEAT, first_effect, NULL);
       break;
     case 1:
-      effect_timer = mgos_set_timer(speed, MGOS_TIMER_REPEAT, strobe_effect, NULL);
       LOG(LL_INFO, ("Starting strobe effect..."));
+      s_strobe_data.color = mgos_sys_config_get_strip_color();
+      effect_timer = mgos_set_timer(speed, MGOS_TIMER_REPEAT, strobe_effect, &s_strobe_data);
       break;
     case 2:
-      effect_timer = mgos_set_timer(speed / 4 * 3, MGOS_TIMER_REPEAT, cylon_effect, NULL);
       LOG(LL_INFO, ("Starting cylon effect..."));
+      effect_timer = mgos_set_timer(speed / 4 * 3, MGOS_TIMER_REPEAT, cylon_effect, NULL);
       break;
     case 3:
-      effect_timer = mgos_set_timer(speed, MGOS_TIMER_REPEAT, rainbow_effect, NULL);
       LOG(LL_INFO, ("Starting rainbow effect..."));
+      effect_timer = mgos_set_timer(speed, MGOS_TIMER_REPEAT, rainbow_effect, NULL);
       break;
     case 4:
-      effect_timer = mgos_set_timer(speed, MGOS_TIMER_REPEAT, rainbow_cycle_effect, NULL);
       LOG(LL_INFO, ("Starting rainbow cycle effect..."));
+      effect_timer = mgos_set_timer(speed, MGOS_TIMER_REPEAT, rainbow_cycle_effect, NULL);
       break;
     case 5:
-      effect_timer = mgos_set_timer(speed / 4, MGOS_TIMER_REPEAT, fade_effect, NULL);
       LOG(LL_INFO, ("Starting fade effect..."));
+      effect_timer = mgos_set_timer(speed / 4, MGOS_TIMER_REPEAT, fade_effect, NULL);
       break;
     case 6:
-      effect_timer = mgos_set_timer(speed * 3, MGOS_TIMER_REPEAT, flash_effect, NULL);
       LOG(LL_INFO, ("Starting flash effect..."));
+      effect_timer = mgos_set_timer(speed * 3, MGOS_TIMER_REPEAT, flash_effect, NULL);
       break;
     case 7:
-      effect_timer = mgos_set_timer(speed / 5, MGOS_TIMER_REPEAT, rbg_loop_effect, NULL);
       LOG(LL_INFO, ("Starting RGB loop effect..."));
+      effect_timer = mgos_set_timer(speed / 5, MGOS_TIMER_REPEAT, rbg_loop_effect, NULL);
       break;
     case 8:
+      LOG(LL_INFO, ("Starting twinkle effect..."));
       node_neopixel_set_all_pixels(get_rgb_color(0));
       effect_timer = mgos_set_timer(speed, MGOS_TIMER_REPEAT, twinkle_effect, NULL);
-      LOG(LL_INFO, ("Starting twinkle effect..."));
       break;
     case 9:
+      LOG(LL_INFO, ("Starting twinkle random effect..."));
       node_neopixel_set_all_pixels(get_rgb_color(0));
       effect_timer = mgos_set_timer(speed, MGOS_TIMER_REPEAT, twinkle_random_effect, NULL);
-      LOG(LL_INFO, ("Starting twinkle random effect..."));
       break;
     case 10:
-      effect_timer = mgos_set_timer(speed / 10, MGOS_TIMER_REPEAT, fire_effect, NULL);
       LOG(LL_INFO, ("Starting fire effect..."));
+      effect_timer = mgos_set_timer(speed / 10, MGOS_TIMER_REPEAT, fire_effect, NULL);
       break;
     case 11:
-      snow_effect();
       LOG(LL_INFO, ("Starting snow effect..."));
+      snow_effect();
       break;
     default:
       LOG(LL_INFO, ("Bad effect: %d", effect));
@@ -521,7 +523,8 @@ static void motion_handler() {
         LOG(LL_INFO, ("ALERT"));
         if(alert_timer == MGOS_INVALID_TIMER_ID) {
           clear_timers();
-          effect_timer = mgos_set_timer(100, MGOS_TIMER_REPEAT, strobe_effect, NULL);
+          s_strobe_data.color = mgos_sys_config_get_strip_color();
+          effect_timer = mgos_set_timer(100, MGOS_TIMER_REPEAT, strobe_effect, &s_strobe_data);
           alert_timer = mgos_set_timer(15000, false, start_vigilance, NULL);
           mgos_mqtt_pubf("alert/motion", 1, false, MOTION_ALERT_JSON_FMT, mgos_uptime());
         }
