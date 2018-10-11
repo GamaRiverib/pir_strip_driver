@@ -35,6 +35,10 @@ typedef struct rgb_color {
     int blue;
 } rgb_color;
 
+typedef struct neopixel_effect_data {
+    int color;
+} neopixel_effect_data;
+
 rgb_color get_rgb_color(int);
 
 int get_hex_color(int, int, int);

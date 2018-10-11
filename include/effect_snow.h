@@ -22,29 +22,37 @@
 #include "mgos.h"
 #include "nvk_nodes_neopixel.h"
 
-#ifndef NVK_INCLUDE_EFFECT_STROBE_H_
-#define NVK_INCLUDE_EFFECT_STROBE_H_
+#ifndef NVK_INCLUDE_EFFECT_SNOW_H_
+#define NVK_INCLUDE_EFFECT_SNOW_H_
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-static bool s_strobe_effect_state = true;
-static rgb_color rgb_color_black = { 0, 0, 0 };
+#define SNOW_EFFECT_INDEX 11
+#define MODE_EFFECT 2
 
-void strobe_effect(void *args) {
-    neopixel_effect_data *user_strobe_data = (neopixel_effect_data*) args;
-    rgb_color c = get_rgb_color(user_strobe_data->color);
-    if(s_strobe_effect_state) {
+static void snow_effect_cb() {
+  rgb_color c = get_rgb_color(0x101010);
+  node_neopixel_set_all_pixels(c);
+}
+
+void snow_effect() {
+    if(mgos_sys_config_get_strip_effect() == SNOW_EFFECT_INDEX && mgos_sys_config_get_app_mode() == MODE_EFFECT) {
+        rgb_color c = get_rgb_color(0x101010);
         node_neopixel_set_all_pixels(c);
-    } else {
-        node_neopixel_set_all_pixels(rgb_color_black);
+        int num_pixels = mgos_sys_config_get_nodes_neopixel_pixels();
+        int p = (int) mgos_rand_range(0, num_pixels - 1);
+        node_neopixel_set(p, 0xFF, 0xFF, 0xFF);
+        node_neopixel_show();
+        mgos_set_timer(20, false, snow_effect_cb, NULL);
+        int d = (int) mgos_rand_range(120, 1000);
+        mgos_set_timer(d, false, snow_effect, NULL);
     }
-    s_strobe_effect_state = !s_strobe_effect_state;
 }
 
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */
 
-#endif /* NVK_INCLUDE_EFFECT_STROBE_H_ */
+#endif /* NVK_INCLUDE_EFFECT_SNOW_H_ */

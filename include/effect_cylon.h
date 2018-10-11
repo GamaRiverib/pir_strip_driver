@@ -34,12 +34,8 @@ extern "C" {
 static bool s_cylon_effect_dir = true;
 static int s_cylon_effect_counter = 0;
 
-typedef struct cylon_data {
-    int color;
-} cylon_data;
-
 void cylon_effect(void *args) {
-    cylon_data *user_cylon_data = (cylon_data*) args;
+    neopixel_effect_data *user_cylon_data = (neopixel_effect_data*) args;
     rgb_color c = get_rgb_color(user_cylon_data->color);
     int r = c.red / 10;
     int g = c.green / 10;
