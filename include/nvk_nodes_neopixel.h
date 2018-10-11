@@ -63,6 +63,8 @@ void node_neopixel_show();
 
 bool node_neopixel_init();
 
+rgb_color node_neopixel_get_pixel_color(int);
+
 #ifdef __cplusplus
 }
 #endif /* __cplusplus */

@@ -99,11 +99,18 @@ config_schema:
   - ["pir.keep", "i", 30, {title: "Time to keep turn on (seconds)"}]
 
   - ["strip", "o", {title: "Led Strip WS2812 configuration"}]
-  - ["strip.pixels", "i", 12, {title: "Led Strip pixels"}]
   - ["strip.color", "i", 0x881F78, {title: "Led Strip color"}]
   - ["strip.brightness", "i", 100, {title: "Led Strip brightness"}]
   - ["strip.effect", "i", 0, {title: "Led Strip effect"}]
-  - ["strip.speed", "s", "normal", {title: "Led Strip effect speed"}]
+  - ["strip.speed", "i", 200, {title: "Led Strip effect speed"}]
+
+  - ["effects", "o", {title: "Led Strip WS2812 effects configuration"}]
+  - ["effects.cylon_size", "i", 1, {title: "Cylon effect eye size"}]
+  - ["effects.fire_cooling", "i", 90, {title: "Fire effect cooling size"}]
+  - ["effects.fire_sparking", "i", 120, {title: "Fire effect sparking size"}]
+  - ["effects.meteor_size", "i", 3, {title: "Meteor effect meteor size"}]
+  - ["effects.meteor_random", "b", true, {title: "Meteor effect random decay"}]
+  - ["effects.meteor_trail", "i", 64, {title: "Meteor effect trail decay"}]
 
 libs:
       # common mgos libs

@@ -29,12 +29,11 @@
 extern "C" {
 #endif
 
-#define CYLON_SIZE 1
-
 static bool s_cylon_effect_dir = true;
 static int s_cylon_effect_counter = 0;
 
 void cylon_effect(void *args) {
+    int eye_size = mgos_sys_config_get_effects_cylon_size();
     neopixel_effect_data *user_cylon_data = (neopixel_effect_data*) args;
     rgb_color c = get_rgb_color(user_cylon_data->color);
     int r = c.red / 10;
@@ -45,7 +44,7 @@ void cylon_effect(void *args) {
     
     if(s_cylon_effect_dir) {
         s_cylon_effect_counter++;
-        s_cylon_effect_dir = p < (n - CYLON_SIZE - 3);
+        s_cylon_effect_dir = p < (n - eye_size - 3);
     } else {
         s_cylon_effect_counter--;
         s_cylon_effect_dir = p <= 1;
@@ -53,10 +52,10 @@ void cylon_effect(void *args) {
 
     node_neopixe_set_all(0, 0, 0);
     node_neopixel_set(p, r, g, b);
-    for (int i = 1; i <= CYLON_SIZE; i++) {
+    for (int i = 1; i <= eye_size; i++) {
         node_neopixel_set(p + i, c.red, c.green, c.blue);
     }
-    node_neopixel_set(p + CYLON_SIZE + 1, r, g, b);
+    node_neopixel_set(p + eye_size + 1, r, g, b);
     node_neopixel_show();
 }
 

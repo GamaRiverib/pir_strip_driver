@@ -27,6 +27,7 @@
 #include "nvk_nodes_pir.h"
 #include "nvk_nodes_photoresistor.h"
 #include "nvk_nodes_neopixel.h"
+#include "effect_default.h"
 #include "effect_strobe.h"
 #include "effect_cylon.h"
 #include "effect_rainbow.h"
@@ -36,8 +37,9 @@
 #include "effect_twinkle.h"
 #include "effect_fire.h"
 #include "effect_snow.h"
+#include "effect_meteor.h"
 
-#define TOTAL_EFFECTS 12
+#define TOTAL_EFFECTS 13
 
 #define MODE_OFF 0
 #define MODE_ON 1
@@ -54,6 +56,8 @@ static int smooth_brightness = 0;
 static neopixel_effect_data s_neopixel_effect_data = { 0 };
 
 const char MOTION_ALERT_JSON_FMT[] = "{uptime:%f}";
+
+const char RPC_SUCCESS_RESPONSE_JSON_FMT[] = "{success:true}";
 
 static void clear_timers() {
   if(effect_timer != MGOS_INVALID_TIMER_ID) {
@@ -93,97 +97,87 @@ static bool is_dark() {
   return node_photoresistor_get_luminosity() <= mgos_sys_config_get_pir_threshold();
 }
 
-static void first_effect() {
-  static int s_first_effect_counter = 0;
-  int num_pixels = mgos_sys_config_get_nodes_neopixel_pixels();
-  int p = (s_first_effect_counter++) % num_pixels;
-  int r = s_first_effect_counter % 255;
-  int g = (s_first_effect_counter * 2) % 255;
-  int b = (s_first_effect_counter * s_first_effect_counter) % 255;
-  int h = get_hex_color(r, g, b);
-  rgb_color c = get_rgb_color(h);
-  node_neopixel_set_pixel(p, c);
-}
-
 static void start_effect() {
   clear_timers();
   int effect = mgos_sys_config_get_strip_effect();
-  int speed = 200; // TODO: config speed
+  int speed = mgos_sys_config_get_strip_speed();
+  char *effect_name;
   switch(effect) {
     case 0:
-      LOG(LL_INFO, ("Starting first effect..."));
+      effect_name = "default";
       effect_timer = mgos_set_timer(speed / 4 * 3, MGOS_TIMER_REPEAT, first_effect, NULL);
       break;
     case 1:
-      LOG(LL_INFO, ("Starting strobe effect..."));
+      effect_name = "strobe";
       s_neopixel_effect_data.color = mgos_sys_config_get_strip_color();
       effect_timer = mgos_set_timer(speed, MGOS_TIMER_REPEAT, strobe_effect, &s_neopixel_effect_data);
       break;
     case 2:
-      LOG(LL_INFO, ("Starting cylon effect..."));
+      effect_name = "cylon";
       s_neopixel_effect_data.color = mgos_sys_config_get_strip_color();
       effect_timer = mgos_set_timer(speed / 4 * 3, MGOS_TIMER_REPEAT, cylon_effect, &s_neopixel_effect_data);
       break;
     case 3:
-      LOG(LL_INFO, ("Starting rainbow effect..."));
+      effect_name = "rainbow";
       effect_timer = mgos_set_timer(speed, MGOS_TIMER_REPEAT, rainbow_effect, NULL);
       break;
     case 4:
-      LOG(LL_INFO, ("Starting rainbow cycle effect..."));
+      effect_name = "rainbow cycle";
       effect_timer = mgos_set_timer(speed, MGOS_TIMER_REPEAT, rainbow_cycle_effect, NULL);
       break;
     case 5:
-      LOG(LL_INFO, ("Starting fade effect..."));
+      effect_name = "fade";
       effect_timer = mgos_set_timer(speed / 4, MGOS_TIMER_REPEAT, fade_effect, NULL);
       break;
     case 6:
-      LOG(LL_INFO, ("Starting flash effect..."));
+      effect_name = "flash";
       effect_timer = mgos_set_timer(speed * 3, MGOS_TIMER_REPEAT, flash_effect, NULL);
       break;
     case 7:
-      LOG(LL_INFO, ("Starting RGB loop effect..."));
+      effect_name = "RGB loop";
       effect_timer = mgos_set_timer(speed / 5, MGOS_TIMER_REPEAT, rbg_loop_effect, NULL);
       break;
     case 8:
-      LOG(LL_INFO, ("Starting twinkle effect..."));
+      effect_name = "twinkle";
       node_neopixel_set_all_pixels(get_rgb_color(0));
       s_neopixel_effect_data.color = mgos_sys_config_get_strip_color();
       effect_timer = mgos_set_timer(speed, MGOS_TIMER_REPEAT, twinkle_effect, &s_neopixel_effect_data);
       break;
     case 9:
-      LOG(LL_INFO, ("Starting twinkle random effect..."));
+      effect_name = "twinkle random";
       node_neopixel_set_all_pixels(get_rgb_color(0));
       effect_timer = mgos_set_timer(speed, MGOS_TIMER_REPEAT, twinkle_random_effect, NULL);
       break;
     case 10:
-      LOG(LL_INFO, ("Starting fire effect..."));
+      effect_name = "fire";
       effect_timer = mgos_set_timer(speed / 10, MGOS_TIMER_REPEAT, fire_effect, NULL);
       break;
     case 11:
-      LOG(LL_INFO, ("Starting snow effect..."));
+      effect_name = "snow";
       snow_effect();
+      break;
+    case 12:
+      effect_name = "meteor";
+      effect_timer = mgos_set_timer(speed / 7, MGOS_TIMER_REPEAT, meteor_effect, NULL);
       break;
     default:
       LOG(LL_INFO, ("Bad effect: %d", effect));
       strip_turn_off();
+      return;
   }
+  LOG(LL_INFO, ("Starting %s effect...", effect_name));
 }
 
 static void start_night_light() {
   clear_timers();
-  node_neopixel_clear();
-  int num_pixels = mgos_sys_config_get_nodes_neopixel_pixels();
-  for(int p = 0; p < num_pixels; p++) {
-    node_neopixel_set(p, 0, 0, 0);
-  }
-  node_neopixel_show();
+  node_neopixel_turn_off();
   mgos_sys_config_set_app_mode(MODE_NIGHT);
   LOG(LL_INFO, ("Starting night light"));
 }
 
 static void start_vigilance() {
   clear_timers();
-  int speed = 100; // TODO
+  int speed = mgos_sys_config_get_strip_speed() / 2;
   s_neopixel_effect_data.color = mgos_sys_config_get_strip_color();
   effect_timer = mgos_set_timer(speed, MGOS_TIMER_REPEAT, cylon_effect, &s_neopixel_effect_data);
   mgos_sys_config_set_app_mode(MODE_VIGILANCE);
@@ -208,13 +202,18 @@ static void smooth_turn_off() {
 }
 
 static void check_last_motion_time() {
-  int diff = mgos_uptime() - last_motion_time;
-  if (diff < mgos_sys_config_get_pir_keep()) {
-    int wait = mgos_sys_config_get_pir_keep() - diff;
-    mgos_set_timer(wait, false, check_last_motion_time, NULL);
+  int current_time = mgos_uptime();
+  if (current_time > last_motion_time) {
+    int diff = mgos_uptime() - last_motion_time;
+    if (diff < mgos_sys_config_get_pir_keep()) {
+      int wait = (mgos_sys_config_get_pir_keep() - diff) * 1000;
+      mgos_set_timer(wait, false, check_last_motion_time, NULL);
+    } else {
+      clear_timers();
+      smooth_timer = mgos_set_timer(1000, MGOS_TIMER_REPEAT, smooth_turn_off, NULL);
+    }
   } else {
-    clear_timers();
-    smooth_timer = mgos_set_timer(1000, MGOS_TIMER_REPEAT, smooth_turn_off, NULL);
+    mgos_set_timer(mgos_sys_config_get_pir_keep() * 1000, false, check_last_motion_time, NULL);
   }
 }
 
@@ -243,7 +242,6 @@ static void motion_handler() {
         }
         break;
       case MODE_VIGILANCE:
-        LOG(LL_INFO, ("ALERT"));
         if(alert_timer == MGOS_INVALID_TIMER_ID) {
           clear_timers();
           s_neopixel_effect_data.color = mgos_sys_config_get_strip_color();
@@ -252,8 +250,6 @@ static void motion_handler() {
           mgos_mqtt_pubf("alert/motion", 1, false, MOTION_ALERT_JSON_FMT, mgos_uptime());
         }
         break;
-      default:
-        LOG(LL_INFO, ("Ignore motion"));
     }
   }
 }
@@ -271,7 +267,7 @@ void node_pir_toggle_handler(int value, void *user_data) {
 static void rpc_turn_on_cb(struct mg_rpc_request_info *ri, const char *args,
                            const char *src, void *user_data) {
   strip_turn_on();
-  mg_rpc_send_responsef(ri, "{success:true}");
+  mg_rpc_send_responsef(ri, RPC_SUCCESS_RESPONSE_JSON_FMT);
   (void) args;
   (void) src;
   (void) user_data;
@@ -280,7 +276,7 @@ static void rpc_turn_on_cb(struct mg_rpc_request_info *ri, const char *args,
 static void rpc_turn_off_cb(struct mg_rpc_request_info *ri, const char *args,
                            const char *src, void *user_data) {
   strip_turn_off();
-  mg_rpc_send_responsef(ri, "{success:true}");
+  mg_rpc_send_responsef(ri, RPC_SUCCESS_RESPONSE_JSON_FMT);
   (void) args;
   (void) src;
   (void) user_data;
@@ -296,7 +292,7 @@ static void rpc_set_effect_cb(struct mg_rpc_request_info *ri, const char *args,
   mgos_sys_config_set_strip_effect(e);
   mgos_sys_config_set_app_mode(MODE_EFFECT);
   start_effect();
-  mg_rpc_send_responsef(ri, "{success:true, effect:%d}", e);
+  mg_rpc_send_responsef(ri, RPC_SUCCESS_RESPONSE_JSON_FMT);
   (void) args;
   (void) src;
   (void) user_data;
@@ -312,7 +308,7 @@ static void rpc_set_next_effect_cb(struct mg_rpc_request_info *ri, const char *a
   mgos_sys_config_set_strip_effect(e);
   mgos_sys_config_set_app_mode(MODE_EFFECT);
   start_effect();
-  mg_rpc_send_responsef(ri, "{success:true, effect:%d}", e);
+  mg_rpc_send_responsef(ri, RPC_SUCCESS_RESPONSE_JSON_FMT);
   (void) args;
   (void) src;
   (void) user_data;
@@ -321,7 +317,7 @@ static void rpc_set_next_effect_cb(struct mg_rpc_request_info *ri, const char *a
 static void rpc_set_night_light_cb(struct mg_rpc_request_info *ri, const char *args,
                            const char *src, void *user_data) {
   start_night_light();
-  mg_rpc_send_responsef(ri, "{success:true}");
+  mg_rpc_send_responsef(ri, RPC_SUCCESS_RESPONSE_JSON_FMT);
   (void) args;
   (void) src;
   (void) user_data;
@@ -330,7 +326,7 @@ static void rpc_set_night_light_cb(struct mg_rpc_request_info *ri, const char *a
 static void rpc_set_vigilance_cb(struct mg_rpc_request_info *ri, const char *args,
                            const char *src, void *user_data) {
   start_vigilance();
-  mg_rpc_send_responsef(ri, "{success:true}");
+  mg_rpc_send_responsef(ri, RPC_SUCCESS_RESPONSE_JSON_FMT);
   (void) args;
   (void) src;
   (void) user_data;
@@ -342,7 +338,7 @@ static void rpc_set_color_cb(struct mg_rpc_request_info *ri, const char *args,
   LOG(LL_INFO, ("Set color: %d", color & 0xFFFFFF));
   mgos_sys_config_set_strip_color(color & 0xFFFFFF);
   strip_turn_on();
-  mg_rpc_send_responsef(ri, "{success:true}");
+  mg_rpc_send_responsef(ri, RPC_SUCCESS_RESPONSE_JSON_FMT);
   (void) args;
   (void) src;
   (void) user_data;
@@ -402,11 +398,9 @@ static void custom_blynk_handler(struct mg_connection *c, const char *cmd, int p
 enum mgos_app_init_result mgos_app_init(void) {
 
   if(nodes_init()) {
-    LOG(LL_INFO, ("Nodes init succesfully."));
-
     node_pir_set_pir_toggle_handler(node_pir_toggle_handler);
   } else {
-    LOG(LL_INFO, ("Nodes init error."));
+    LOG(LL_ERROR, ("Error initializing the nodes"));
   }
 
   // Configure Built in LED
@@ -426,10 +420,9 @@ enum mgos_app_init_result mgos_app_init(void) {
   mgos_rpc_add_handler("Driver.Color", rpc_set_color_cb, NULL);
 
   if (mgos_blynk_init()) {
-    LOG(LL_INFO, ("Blynk init success"));
     blynk_set_handler(custom_blynk_handler, NULL);
   } else {
-    LOG(LL_INFO, ("Failed to init Blynk"));
+    LOG(LL_ERROR, ("Failed to init Blynk"));
   }
 
   int mode = mgos_sys_config_get_app_mode();

@@ -19,9 +19,17 @@
 #include "mgos_neopixel.h"
 #include "nvk_nodes_neopixel.h"
 
-static struct mgos_neopixel *s_node_neopixel = NULL;
+struct mgos_neopixel {
+  int pin;
+  int num_pixels;
+  enum mgos_neopixel_order order;
+  uint8_t *data;
+};
+
+static struct mgos_neopixel *s_node_neopixel =NULL;
 
 #define NODE_NEOPIXEL_ORDER MGOS_NEOPIXEL_ORDER_GRB
+#define NUM_CHANNELS 3
 
 rgb_color get_rgb_color(int color) {
     int r = (color >> 16) & 0xFF;
@@ -97,4 +105,24 @@ bool node_neopixel_init() {
         s_node_neopixel = mgos_neopixel_create(pin, num_pixels, NODE_NEOPIXEL_ORDER);
     }
     return enabled;
+}
+
+rgb_color node_neopixel_get_pixel_color(int pixel) {
+    uint8_t *p = s_node_neopixel->data + pixel * NUM_CHANNELS;
+    int hex_color = 0;
+    switch (s_node_neopixel->order) {
+        case MGOS_NEOPIXEL_ORDER_RGB:
+            hex_color = get_hex_color(p[0], p[1], p[2]);
+            break;
+        case MGOS_NEOPIXEL_ORDER_GRB:
+            hex_color = get_hex_color(p[1], p[0], p[2]);
+            break;
+        case MGOS_NEOPIXEL_ORDER_BGR:
+            hex_color = get_hex_color(p[2], p[1], p[0]);
+            break;
+        default:
+            LOG(LL_ERROR, ("Wrong order: %d", s_node_neopixel->order));
+            break;
+    }
+    return get_rgb_color(hex_color);
 }

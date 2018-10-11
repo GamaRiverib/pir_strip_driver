@@ -29,46 +29,44 @@
 extern "C" {
 #endif
 
-#define FIRE_EFFECT_COOLING 90
-#define FIRE_EFFECT_SPARKING 120
-
-static int s_fire_effect_heat[30]; // TODO
-
 void fire_effect(void *args) {
     (void) args;
     int cooldown;
     int num_pixels = mgos_sys_config_get_nodes_neopixel_pixels();
+    int heat[num_pixels];
+    int cooling = mgos_sys_config_get_effects_fire_cooling();
+    int sparking = mgos_sys_config_get_effects_fire_sparking();
 
     for(int i = 0; i < num_pixels; i++) {
-        cooldown = (int) mgos_rand_range(0, ((FIRE_EFFECT_COOLING * 10) / num_pixels) + 2);
-        if(cooldown > s_fire_effect_heat[i]) {
-        s_fire_effect_heat[i] = 0;
+        cooldown = (int) mgos_rand_range(0, ((cooling * 10) / num_pixels) + 2);
+        if(cooldown > heat[i]) {
+        heat[i] = 0;
         } else {
-        s_fire_effect_heat[i] = s_fire_effect_heat[i] - cooldown;
+        heat[i] = heat[i] - cooldown;
         }
     }
 
     for(int k = num_pixels - 1; k >= 2; k--) {
-        s_fire_effect_heat[k] = (s_fire_effect_heat[k - 1] + s_fire_effect_heat[k - 2] + s_fire_effect_heat[k - 2]) / 3;
+        heat[k] = (heat[k - 1] + heat[k - 2] + heat[k - 2]) / 3;
     }
 
-    if((int) mgos_rand_range(0, 254) < FIRE_EFFECT_SPARKING) {
+    if((int) mgos_rand_range(0, 254) < sparking) {
         int y = (int) mgos_rand_range(0, 6);
-        s_fire_effect_heat[y] = s_fire_effect_heat[y] + (int) mgos_rand_range(159, 254);
+        heat[y] = heat[y] + (int) mgos_rand_range(159, 254);
     }
 
     node_neopixel_clear();
     for(int j = 0; j < num_pixels; j++) {
-        int t192 = round((s_fire_effect_heat[j] / 255.0) * 191);
+        int t192 = round((heat[j] / 255.0) * 191);
         int heatramp = t192 & 0x3F;
-        heatramp <<= 2;
-        heatramp = heatramp & 255;
+        heatramp <<= 0x02;
+        heatramp = heatramp & 0xFF;
         if(t192 > 0x80) {
-        node_neopixel_set(j, 255, 255, heatramp);
+        node_neopixel_set(j, 0xFF, 0xFF, heatramp);
         } else if(t192 > 0x40) {
-        node_neopixel_set(j, 255, heatramp, 0);
+        node_neopixel_set(j, 0xFF, heatramp, 0x00);
         } else {
-        node_neopixel_set(j, heatramp, 0, 0);
+        node_neopixel_set(j, heatramp, 0x00, 0x00);
         }
     }
 
