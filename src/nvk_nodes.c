@@ -24,7 +24,7 @@
 #include "nvk_nodes_neopixel.h"
 
 /* Initialize Nodes */
-bool nodes_init() {
+bool mgos_nodes_init() {
     node_dht_init(); // TODO
     node_pir_init();
     node_photoresistor_init();

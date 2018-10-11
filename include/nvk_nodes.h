@@ -45,7 +45,7 @@ typedef void (*node_on_range_handler_t)(struct node_range_values *values, void *
 typedef void (*node_switch_handler_t)(int value, void *user_data);
 
 /* Initialize Nodes */
-bool nodes_init();
+bool mgos_nodes_init();
 
 #ifdef __cplusplus
 }

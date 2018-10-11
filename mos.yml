@@ -23,6 +23,9 @@ config_schema:
   # - ["blynk.auth", ""]
   - ["blynk.enable", true]
 
+  - ["sntp.enable", true]
+  - ["sntp.server", "time.google.com"]
+
   # Nodes (Drivers wrapper)
   - ["nodes", "o", {title: "Nodes wrappers definition"}]
 
@@ -80,13 +83,6 @@ config_schema:
   - ["nodes.neopixel.pin", "i", 2, {title: "Neopixel LedStrip pin"}]
   - ["nodes.neopixel.pixels", "i", 12, {title: "Neopixel LedStrip num pixels"}]
 
-  - ["sntp", "o", {title: "SNTP settings"}]
-  - ["sntp.enable", "b", true, {title: "Enable SNTP"}]
-  - ["sntp.server", "s", "time.google.com", {title: "Server address"}]
-  - ["sntp.retry_min", "i", 1, {title: "Minimum retry interval"}]
-  - ["sntp.retry_max", "i", 30, {title: "Maximum retry interval"}]
-  - ["sntp.update_interval", "i", 7200, {title: "Update interval. If 0, performs a one-off sync"}]
-
   - ["pins", "o", {title: "Pins configuration"}]
   - ["pins.led", "i", 12, {title: "PIR led pin"}]
 
@@ -134,6 +130,7 @@ libs:
   - origin: https://github.com/mongoose-os-libs/rpc-service-wifi
   - origin: https://github.com/mongoose-os-libs/vfs-dev-spi-flash
   - origin: https://github.com/mongoose-os-libs/wifi
+  - origin: https://github.com/mongoose-os-libs/sntp
   
   # - origin: https://github.com/mongoose-os-libs/core
   # - origin: https://github.com/mongoose-os-libs/dash

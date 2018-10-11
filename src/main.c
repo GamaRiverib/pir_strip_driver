@@ -397,7 +397,7 @@ static void custom_blynk_handler(struct mg_connection *c, const char *cmd, int p
 
 enum mgos_app_init_result mgos_app_init(void) {
 
-  if(nodes_init()) {
+  if(mgos_nodes_init()) {
     node_pir_set_pir_toggle_handler(node_pir_toggle_handler);
   } else {
     LOG(LL_ERROR, ("Error initializing the nodes"));
@@ -419,11 +419,13 @@ enum mgos_app_init_result mgos_app_init(void) {
   mgos_rpc_add_handler("Driver.Vigilance", rpc_set_vigilance_cb, NULL);
   mgos_rpc_add_handler("Driver.Color", rpc_set_color_cb, NULL);
 
-  if (mgos_blynk_init()) {
+  blynk_set_handler(custom_blynk_handler, NULL);
+
+  /*if (mgos_blynk_init()) {
     blynk_set_handler(custom_blynk_handler, NULL);
   } else {
     LOG(LL_ERROR, ("Failed to init Blynk"));
-  }
+  }*/
 
   int mode = mgos_sys_config_get_app_mode();
   switch(mode) {
