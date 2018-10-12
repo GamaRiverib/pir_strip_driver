@@ -139,6 +139,14 @@ void node_dht_rpc_stat_handler(struct mg_rpc_request_info *ri, const char *args,
   (void) src;
 }
 
+float node_dht_get_temperature() {
+    return mgos_dht_get_temp(s_node_dht);
+}
+
+float node_dht_get_humidity() {
+    return mgos_dht_get_humidity(s_node_dht);
+}
+
 bool node_dht_init() {
     bool enabled = mgos_sys_config_get_nodes_dht_enable();
     if(enabled) {

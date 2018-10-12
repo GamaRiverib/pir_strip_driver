@@ -24,6 +24,7 @@
 #include "mgos_mqtt.h"
 #include "mgos_blynk.h"
 #include "nvk_nodes.h"
+#include "nvk_nodes_dht.h"
 #include "nvk_nodes_pir.h"
 #include "nvk_nodes_photoresistor.h"
 #include "nvk_nodes_neopixel.h"
@@ -56,8 +57,23 @@ static int smooth_brightness = 0;
 static neopixel_effect_data s_neopixel_effect_data = { 0 };
 
 const char MOTION_ALERT_JSON_FMT[] = "{uptime:%f}";
-
+const char RPC_DEVICE_STATE_JSON_FMT[] = "{id:\"%s\",mode:%d,temp:%d,humd:%d,lum:%d}";
 const char RPC_SUCCESS_RESPONSE_JSON_FMT[] = "{success:true}";
+const char EFFECTS_LIST[][16] = {
+  "default",
+  "strobe",
+  "cylon",
+  "rainbow",
+  "rainbow cycle",
+  "fade",
+  "flash",
+  "RGB loop",
+  "twinkle",
+  "twinkle random",
+  "fire",
+  "snow",
+  "meteor"
+};
 
 static void clear_timers() {
   if(effect_timer != MGOS_INVALID_TIMER_ID) {
@@ -101,63 +117,49 @@ static void start_effect() {
   clear_timers();
   int effect = mgos_sys_config_get_strip_effect();
   int speed = mgos_sys_config_get_strip_speed();
-  char *effect_name;
   switch(effect) {
     case 0:
-      effect_name = "default";
       effect_timer = mgos_set_timer(speed / 4 * 3, MGOS_TIMER_REPEAT, first_effect, NULL);
       break;
     case 1:
-      effect_name = "strobe";
       s_neopixel_effect_data.color = mgos_sys_config_get_strip_color();
       effect_timer = mgos_set_timer(speed, MGOS_TIMER_REPEAT, strobe_effect, &s_neopixel_effect_data);
       break;
     case 2:
-      effect_name = "cylon";
       s_neopixel_effect_data.color = mgos_sys_config_get_strip_color();
       effect_timer = mgos_set_timer(speed / 4 * 3, MGOS_TIMER_REPEAT, cylon_effect, &s_neopixel_effect_data);
       break;
     case 3:
-      effect_name = "rainbow";
       effect_timer = mgos_set_timer(speed, MGOS_TIMER_REPEAT, rainbow_effect, NULL);
       break;
     case 4:
-      effect_name = "rainbow cycle";
       effect_timer = mgos_set_timer(speed, MGOS_TIMER_REPEAT, rainbow_cycle_effect, NULL);
       break;
     case 5:
-      effect_name = "fade";
       effect_timer = mgos_set_timer(speed / 4, MGOS_TIMER_REPEAT, fade_effect, NULL);
       break;
     case 6:
-      effect_name = "flash";
       effect_timer = mgos_set_timer(speed * 3, MGOS_TIMER_REPEAT, flash_effect, NULL);
       break;
     case 7:
-      effect_name = "RGB loop";
       effect_timer = mgos_set_timer(speed / 5, MGOS_TIMER_REPEAT, rbg_loop_effect, NULL);
       break;
     case 8:
-      effect_name = "twinkle";
       node_neopixel_set_all_pixels(get_rgb_color(0));
       s_neopixel_effect_data.color = mgos_sys_config_get_strip_color();
       effect_timer = mgos_set_timer(speed, MGOS_TIMER_REPEAT, twinkle_effect, &s_neopixel_effect_data);
       break;
     case 9:
-      effect_name = "twinkle random";
       node_neopixel_set_all_pixels(get_rgb_color(0));
       effect_timer = mgos_set_timer(speed, MGOS_TIMER_REPEAT, twinkle_random_effect, NULL);
       break;
     case 10:
-      effect_name = "fire";
       effect_timer = mgos_set_timer(speed / 10, MGOS_TIMER_REPEAT, fire_effect, NULL);
       break;
     case 11:
-      effect_name = "snow";
       snow_effect();
       break;
     case 12:
-      effect_name = "meteor";
       effect_timer = mgos_set_timer(speed / 7, MGOS_TIMER_REPEAT, meteor_effect, NULL);
       break;
     default:
@@ -165,7 +167,7 @@ static void start_effect() {
       strip_turn_off();
       return;
   }
-  LOG(LL_INFO, ("Starting %s effect...", effect_name));
+  LOG(LL_INFO, ("Starting %s effect...", EFFECTS_LIST[effect]));
 }
 
 static void start_night_light() {
@@ -262,6 +264,19 @@ void node_pir_toggle_handler(int value, void *user_data) {
       motion_handler();
     }
     (void) user_data;
+}
+
+static void rpc_get_device_state(struct mg_rpc_request_info *ri, const char *args,
+                           const char *src, void *user_data) {
+  const char* id = mgos_sys_config_get_device_id();
+  int mode = mgos_sys_config_get_app_mode();
+  int temp = (int) node_dht_get_temperature();
+  int humd = (int) node_dht_get_humidity();
+  int lumi = node_photoresistor_get_luminosity();
+  mg_rpc_send_responsef(ri, RPC_DEVICE_STATE_JSON_FMT, id, mode, temp, humd, lumi);
+  (void) args;
+  (void) src;
+  (void) user_data;
 }
 
 static void rpc_turn_on_cb(struct mg_rpc_request_info *ri, const char *args,
@@ -411,6 +426,7 @@ enum mgos_app_init_result mgos_app_init(void) {
   mgos_gpio_set_mode(mgos_sys_config_get_pins_led(), MGOS_GPIO_MODE_OUTPUT);
 
   // Configure RPC interface
+  mgos_rpc_add_handler("Driver.State", rpc_get_device_state, NULL);
   mgos_rpc_add_handler("Driver.On", rpc_turn_on_cb, NULL);
   mgos_rpc_add_handler("Driver.Off", rpc_turn_off_cb, NULL);
   mgos_rpc_add_handler("Driver.Effect", rpc_set_effect_cb, NULL);

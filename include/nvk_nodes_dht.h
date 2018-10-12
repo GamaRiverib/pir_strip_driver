@@ -33,7 +33,9 @@ extern "C" {
 bool node_dht_init();
 void node_dht_sampling_handler(void *dht);
 void node_dht_tele_handler(void *dht);
-void node_dht_rpc_handler(struct mg_rpc_request_info *ri, const char *args, const char *src, void *dht);
+void node_dht_rpc_stat_handler(struct mg_rpc_request_info *ri, const char *args, const char *src, void *dht);
+float node_dht_get_temperature();
+float node_dht_get_humidity();
 void node_dht_set_temp_on_range_handler(node_on_range_handler_t func);
 void node_dht_set_temp_out_range_handler(node_out_range_handler_t func);
 void node_dht_set_humd_on_range_handler(node_on_range_handler_t func);
