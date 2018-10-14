@@ -1,0 +1,259 @@
+<html>
+    <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="style.css">
+    </head>
+    <body>
+        <div id="loading_mask" hidden>
+            <div class="loading"></div>
+        </div>
+        <div class="container form">
+            <div class="navbar">
+                <ul>
+                    <li><a class="back_btn" href="#">Back</a></li>
+                </ul>
+            </div>
+            <div class="row c h">
+                <div class="col-10">
+                    <h5>WIFI</h5>
+                </div>
+            </div>
+            <div class="row section">
+                <div class="col-10">
+                    <h6>Device as station</h6>
+                    <hr/>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-4-sm">
+                    <label>Enable</label>
+                </div>
+                <div class="col-8-sm" style="float: left;">
+                    <input type="checkbox" class="check" id="wifi.sta.enable" />
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-4-sm">
+                    <label>SSID</label>
+                </div>
+                <div class="col-8-sm">
+                    <input type="text" id="wifi.sta.ssid" />
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-4-sm">
+                    <label>Password</label>
+                </div>
+                <div class="col-8-sm">
+                    <input type="password" id="wifi.sta.pass" />
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-4-sm">
+                    <label>IP</label>
+                </div>
+                <div class="col-8-sm">
+                    <input type="text" id="wifi.sta.ip" />
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-4-sm">
+                    <label>Netmask</label>
+                </div>
+                <div class="col-8-sm">
+                    <input type="text" id="wifi.sta.netmask" />
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-4-sm">
+                    <label>Gateway</label>
+                </div>
+                <div class="col-8-sm">
+                    <input type="text" id="wifi.sta.gw" />
+                </div>
+            </div>
+            <!-- AS AP -->
+            <div class="row section">
+                <div class="col-10">
+                    <h6>Device as access point</h6>
+                    <hr/>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-4-sm">
+                    <label>Enable</label>
+                </div>
+                <div class="col-8-sm" style="float: left;">
+                    <input type="checkbox" class="check" id="wifi.ap.enable" />
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-4-sm">
+                    <label>IP</label>
+                </div>
+                <div class="col-8-sm">
+                    <input type="text" id="wifi.ap.ip" />
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-4-sm">
+                    <label>Netmask</label>
+                </div>
+                <div class="col-8-sm">
+                    <input type="text" id="wifi.ap.netmask" />
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-4-sm">
+                    <label>Gateway</label>
+                </div>
+                <div class="col-8-sm">
+                    <input type="text" id="wifi.ap.gw" />
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-4-sm">
+                    <label>Channel</label>
+                </div>
+                <div class="col-8-sm">
+                    <input type="number" id="wifi.ap.channel" />
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-4-sm">
+                    <label>SSID</label>
+                </div>
+                <div class="col-8-sm">
+                    <input type="text" id="wifi.ap.ssid" />
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-4-sm">
+                    <label>Password</label>
+                </div>
+                <div class="col-8-sm">
+                    <input type="password" id="wifi.ap.pass" />
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-4-sm">
+                    <label>Hidden</label>
+                </div>
+                <div class="col-8-sm" style="float: left;">
+                    <input type="checkbox" class="check" id="wifi.ap.hidden" />
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-4-sm">
+                    <label>Hostname</label>
+                </div>
+                <div class="col-8-sm">
+                    <input type="text" id="wifi.ap.hostname" />
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-4-sm">
+                    <label>Keep</label>
+                </div>
+                <div class="col-8-sm" style="float: left;">
+                    <input type="checkbox" class="check" id="wifi.ap.keep_enabled" />
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-4-sm">
+                    <label>Disable</label>
+                </div>
+                <div class="col-8-sm">
+                    <input type="number" id="wifi.ap.disable_after" />
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-4-sm">
+                    <label>Max conn.</label>
+                </div>
+                <div class="col-8-sm">
+                    <input type="number" id="wifi.ap.max_connections" />
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-4-sm">
+                    <label>DHCP start</label>
+                </div>
+                <div class="col-8-sm">
+                    <input type="text" id="wifi.ap.dhcp_start" />
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-4-sm">
+                    <label>DHCP end</label>
+                </div>
+                <div class="col-8-sm">
+                    <input type="text" id="wifi.ap.dhcp_end" />
+                </div>
+            </div>
+        </div>
+        <div class="footer">
+            <button id="submit_btn" disabled>Save</button>
+        </div>
+    </body>
+    <script type="text/javascript" src="script.js"></script>
+    <script>
+        var submit_btn = document.getElementById("submit_btn");
+        submit_btn.onclick = function(ev) {
+            ev.preventDefault();
+            if (data !== null) {
+                postJson(url + "Config.Set", JSON.stringify({ config: data }), function(err, resp) {
+                    if(err) {
+                        alert("Error sending the new configuration. Try again later.");
+                        return;
+                    }
+                    postJson(url + "Config.Save", JSON.stringify({"reboot": true}), function(err1, resp1) {
+                        if(err1) {
+                            alert("Error saving the new configuration. Try again later.");
+                            return;
+                        }
+                        data = null;
+                        submit_btn.setAttribute("disabled", true);
+                        alert("Device is restarted. Please wait a moment until you connect again.");
+                        location.reload();
+                    }, "Saving configuration...");
+                }, "Sending configuration...");
+            }
+        };
+        function setWifiConfig(wifi) {
+            if(typeof(wifi) === "object") {
+                if(wifi.sta) {
+                    for(let k in wifi.sta) {
+                        sIVById("wifi.sta." + k, wifi.sta[k]);
+                    }
+                }
+                if(wifi.sta1) {
+                    for(let k in wifi.sta1) {
+                        sIVById("wifi.sta1." + k, wifi.sta1[k]);
+                    }
+                }
+                if(wifi.sta2) {
+                    for(let k in wifi.sta2) {
+                        sIVById("wifi.sta2." + k, wifi.sta2[k]);
+                    }
+                }
+                if(wifi.ap) {
+                    for(let k in wifi.ap) {
+                        sIVById("wifi.ap." + k, wifi.ap[k]);
+                    }
+                }
+            }
+        }
+        function connectToDevice() {
+            getJson(url + "Config.Get", function(err, resp) {
+                if (err !== null) {
+                    console.log("Error trying to get device configuration. Connect to your device Wi-Fi AP.");
+                    return;
+                }
+                setWifiConfig(resp.wifi);
+            }, "Waiting for device...");
+        }
+
+        connectToDevice();
+    </script>
+</html>

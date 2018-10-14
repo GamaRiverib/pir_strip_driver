@@ -13,14 +13,14 @@ includes:
 filesystem:
   - fs
 config_schema:
-  - ["mqtt.server", "10.10.0.246:1883"]
-  # - ["mqtt.server", "192.168.0.117:1883"]
+  # - ["mqtt.server", "10.10.0.246:1883"]
+  - ["mqtt.server", "192.168.0.117:1883"]
   - ["mqtt.enable", true]
 
-  - ["blynk.server", "192.168.137.1:8442"]
-  - ["blynk.auth", "61e3a70da59542cc92eee4247e06167a"]
-  # - ["blynk.server", "192.168.0.117:8442"]
-  # - ["blynk.auth", ""]
+  # - ["blynk.server", "192.168.137.1:8442"]
+  # - ["blynk.auth", "61e3a70da59542cc92eee4247e06167a"]
+  - ["blynk.server", "192.168.0.117:8442"]
+  - ["blynk.auth", ""]
   - ["blynk.enable", true]
 
   - ["sntp.enable", true]
@@ -81,7 +81,7 @@ config_schema:
   - ["nodes.neopixel", "o", {title: "Neopixel Node wrapper definition"}]
   - ["nodes.neopixel.enable", "b", true, {title: "Neopixel Node enabled"}]
   - ["nodes.neopixel.pin", "i", 2, {title: "Neopixel LedStrip pin"}]
-  - ["nodes.neopixel.pixels", "i", 12, {title: "Neopixel LedStrip num pixels"}]
+  - ["nodes.neopixel.pixels", "i", 30, {title: "Neopixel LedStrip num pixels"}]
 
   - ["pins", "o", {title: "Pins configuration"}]
   - ["pins.led", "i", 12, {title: "PIR led pin"}]

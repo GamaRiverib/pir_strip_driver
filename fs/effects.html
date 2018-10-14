@@ -1,0 +1,88 @@
+<html>
+    <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="style.css">
+    </head>
+    <body>
+        <div id="loading_mask" hidden>
+            <div class="loading"></div>
+        </div>
+        <div class="container form">
+            <div class="navbar">
+                <ul>
+                    <li><a class="back_btn" href="#">Back</a></li>
+                </ul>
+            </div>
+            <div class="row c h">
+                <div class="col-10">
+                    <h5>EFFECTS</h5>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-6-sm">
+                    <label>Cylon eye size</label>
+                </div>
+                <div class="col-6-sm">
+                    <input type="number" id="effects.cylon_size" />
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-6-sm">
+                    <label>Fire cooling</label>
+                </div>
+                <div class="col-6-sm">
+                    <input type="number" id="effects.fire_cooling" />
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-6-sm">
+                    <label>Fire sparking</label>
+                </div>
+                <div class="col-6-sm">
+                    <input type="number" id="effects.fire_sparking" />
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-6-sm">
+                    <label>Meteor random</label>
+                </div>
+                <div class="col-6-sm" style="float: left;">
+                    <input type="checkbox" class="check" id="effects.meteor_random" />
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-6-sm">
+                    <label>Meteor size</label>
+                </div>
+                <div class="col-6-sm">
+                    <input type="number" id="effects.meteor_size" />
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-6-sm">
+                    <label>Meteor trail</label>
+                </div>
+                <div class="col-6-sm">
+                    <input type="number" id="effects.meteor_trail" />
+                </div>
+            </div>
+        </div>
+        <div class="footer">
+            <button id="submit_btn" disabled>Save</button>
+        </div>
+    </body>
+    <script type="text/javascript" src="script.js"></script>
+    <script>
+        function connectToDevice() {
+            getJson(url + "Config.Get", function(err, resp) {
+                if (err !== null) {
+                    console.log("Error trying to get device configuration. Connect to your device Wi-Fi AP.");
+                    return;
+                }
+                sC("effects", resp.effects);
+            }, "Waiting for device...");
+        }
+
+        connectToDevice();
+    </script>
+</html>

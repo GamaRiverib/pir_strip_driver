@@ -1,0 +1,64 @@
+<html>
+    <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="style.css">
+    </head>
+    <body>
+        <div id="loading_mask" hidden>
+            <div class="loading"></div>
+        </div>
+        <div class="container form">
+            <div class="navbar">
+                <ul>
+                    <li><a class="back_btn" href="#">Back</a></li>
+                </ul>
+            </div>
+            <div class="row c h">
+                <div class="col-10">
+                    <h5>PIR</h5>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-4-sm">
+                    <label>Indicator</label>
+                </div>
+                <div class="col-8-sm" style="float: left;">
+                    <input type="checkbox" class="check" id="pir.indicator" />
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-4-sm">
+                    <label>Threshold</label>
+                </div>
+                <div class="col-8-sm">
+                    <input type="number" id="pir.threshold" />
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-4-sm">
+                    <label>Keep</label>
+                </div>
+                <div class="col-8-sm">
+                    <input type="number" id="pir.keep" />
+                </div>
+            </div>
+        </div>
+        <div class="footer">
+            <button id="submit_btn" disabled>Save</button>
+        </div>
+    </body>
+    <script type="text/javascript" src="script.js"></script>
+    <script>
+        function connectToDevice() {
+            getJson(url + "Config.Get", function(err, resp) {
+                if (err !== null) {
+                    console.log("Error trying to get device configuration. Connect to your device Wi-Fi AP.");
+                    return;
+                }
+                sC("pir", resp.pir);
+            }, "Waiting for device...");
+        }
+
+        connectToDevice();
+    </script>
+</html>

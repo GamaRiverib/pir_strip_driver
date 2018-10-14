@@ -1,0 +1,63 @@
+<html>
+    <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="style.css">
+    </head>
+    <body>
+        <div id="loading_mask" hidden>
+            <div class="loading"></div>
+        </div>
+        <div class="container">
+            <div class="navbar">
+                <ul>
+                    <li><a class="home_btn" href="#">Home</a></li>
+                </ul>
+            </div>
+            <div class="row c h">
+                <div class="col-10">
+                    <h5>CONFIGURE</h5>
+                </div>
+            </div>
+            <div class="row c">
+                <div class="col-10 mi">
+                    <button href="nodes.html">NODES</button>
+                </div>
+            </div>
+            <div class="row c">
+                <div class="col-10 mi">
+                    <button href="wifi.html">WIFI</button>
+                </div>
+            </div>
+            <div class="row c">
+                <div class="col-10 mi">
+                    <button href="mqtt.html">MQTT</button>
+                </div>
+            </div>
+            <div class="row c">
+                <div class="col-10 mi">
+                    <button href="blynk.html">BLYNK</button>
+                </div>
+            </div>
+            <div class="row c">
+                <div class="col-10 mi">
+                    <button href="pir.html">PIR</button>
+                </div>
+            </div>
+            <div class="row c">
+                <div class="col-10 mi">
+                    <button href="effects.html">EFFECTS</button>
+                </div>
+            </div>
+        </div>
+    </body>
+    <script type="text/javascript" src="script.js"></script>
+    <script>
+        let btns = document.getElementsByTagName("button");
+        for(let i = 0; i < btns.length; i++) {
+            btns[i].onclick = function(e) {
+                e.preventDefault();
+                window.location.href = e.target.getAttribute("href");
+            }
+        }
+    </script>
+</html>

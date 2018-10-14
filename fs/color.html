@@ -1,0 +1,73 @@
+<html>
+    <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="style.css">
+    </head>
+    <body>
+        <div class="container">
+            <div class="navbar">
+                <ul>
+                    <li><a class="home_btn" href="#">Home</a></li>
+                </ul>
+            </div>
+            <div class="row c h">
+                <div class="col-12">
+                    <small>SELECT COLOR</small>
+                </div>
+            </div>
+            <div class="row c">
+                <div class="col-2 mi" style="background-color: red;">
+                    <a href="#FF0000" class="color"></a>
+                </div>
+                <div class="col-2 mi" style="background-color: green;">
+                    <a href="#00FF00" class="color"></a>
+                </div>
+                <div class="col-2 mi" style="background-color: blue;">
+                    <a href="#0000FF" class="color"></a>
+                </div>
+                <div class="col-2 mi" style="background-color: yellow;">
+                    <a href="#FFFF00" class="color"></a>
+                </div>
+                <div class="col-2 mi" style="background-color: orange;">
+                    <a href="#FFA500" class="color"></a>
+                </div>
+                <div class="col-2 mi" style="background-color:purple;">
+                    <a href="#800080" class="color"></a>
+                </div>
+            </div>
+            <div class="row c">
+                <div class="col-12">
+                    <input type="color" id="select_color" style="width: 100%; height: 50px;" />
+                </div>
+            </div>
+        </div>
+    </body>
+    <script type="text/javascript" src="script.js"></script>
+    <script>
+        let colors = document.getElementsByClassName("color");
+        let select_color = document.getElementById("select_color");
+        function sC(c) {
+            postJson(url + "Driver.Color", c, function(err, resp) {
+                if(err !== null) {
+                    alert("Error trying set color");
+                    return;
+                }
+                console.log(resp); // { success: true }
+                // TODO 
+            }, "Setting color...");
+        }
+        select_color.onchange = function(e) {
+            let c = e.target.value.substr(1);
+            c = parseInt(c, 16);
+            sC(c);
+        };
+        for(let i = 0; i < colors.length; i++) {
+            colors[i].onclick = function(e) {
+                e.preventDefault();
+                let m = e.target.getAttribute("href").substr(1);
+                let c = parseInt(m, 16);
+                sC(c);
+            };
+        }
+    </script>
+</html>

@@ -1,0 +1,76 @@
+<html>
+    <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link rel="stylesheet" href="style.css">
+    </head>
+    <body>
+        <div id="loading_mask" hidden>
+            <div class="loading"></div>
+        </div>
+        <div class="container">
+            <div class="navbar">
+                <ul>
+                    <li><a class="home_btn" href="#">Home</a></li>
+                </ul>
+            </div>
+            <div class="row c h">
+                <div class="col-10">
+                    <small class="device-name"></small>
+                    <h5>SET MODE</h5>
+                </div>
+            </div>
+            <div class="row c">
+                <div class="col-10 mi">
+                    <button href="#Driver.Off">OFF</button>
+                </div>
+            </div>
+            <div class="row c">
+                <div class="col-10 mi">
+                    <button href="#Driver.On">LIGHT ON</button>
+                </div>
+            </div>
+            <div class="row c">
+                <div class="col-10 mi">
+                    <button href="#Driver.Effect">EFFECT LIGHTS</button>
+                </div>
+            </div>
+            <div class="row c">
+                <div class="col-10 mi">
+                    <button href="#Driver.Night">NIGHT LIGHT</button>
+                </div>
+            </div>
+            <div class="row c">
+                <div class="col-10 mi">
+                    <button href="#Driver.Vigilance">VIGILANCE</button>
+                </div>
+            </div>
+        </div>
+    </body>
+    <script type="text/javascript" src="script.js"></script>
+    <script>
+        function getState() {
+            getJson(url + "Driver.State", function(err, resp) {
+                if (err !== null) {
+                    alert("Error trying to get the device state. Check if you are connected to it.");
+                    return window.location.href = PAGES.CONNECTING;
+                }
+                let mode = MODES[resp.mode] || "";
+                sHbC("device-name", resp.id || "");
+                let btns = document.getElementsByTagName("button");
+                for(let i = 0; i < btns.length; i++) {
+                    if(btns[i].innerHTML == mode) {
+                        btns[i].setAttribute("disabled", true);
+                    } else {
+                        btns[i].removeAttribute("disabled");
+                        btns[i].onclick = function(e) {
+                            e.preventDefault();
+                            e.target.addEventListener(EVENTS.RPC_CALLBACK, getState);
+                            rpc(e);
+                        };
+                    }
+                }
+            }, "Getting device state...");
+        }
+        getState();
+    </script>
+</html>
