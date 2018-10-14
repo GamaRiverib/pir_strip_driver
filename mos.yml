@@ -104,9 +104,9 @@ config_schema:
   - ["effects.cylon_size", "i", 1, {title: "Cylon effect eye size"}]
   - ["effects.fire_cooling", "i", 90, {title: "Fire effect cooling size"}]
   - ["effects.fire_sparking", "i", 120, {title: "Fire effect sparking size"}]
-  - ["effects.meteor_size", "i", 3, {title: "Meteor effect meteor size"}]
+  - ["effects.meteor_size", "i", 7, {title: "Meteor effect meteor size"}]
   - ["effects.meteor_random", "b", true, {title: "Meteor effect random decay"}]
-  - ["effects.meteor_trail", "i", 64, {title: "Meteor effect trail decay"}]
+  - ["effects.meteor_trail", "i", 80, {title: "Meteor effect trail decay"}]
 
 libs:
       # common mgos libs

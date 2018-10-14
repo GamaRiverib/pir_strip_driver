@@ -33,30 +33,33 @@ static int s_meteor_effect_counter = 0;
 
 void fade_to_black(int pixel, int fade) {
     rgb_color color = node_neopixel_get_pixel_color(pixel);
-    int f = (int)(fade / 256);
-    color.red = (color.red <= 10) ? 0 : (int)(color.red - (color.red * f));
-    color.green = (color.green <= 10) ? 0 : (int)(color.green - (color.green * f));
-    color.blue = (color.blue <= 10) ? 0 : (int)(color.blue - (color.blue * f));
+    color.red = (color.red <= 10) ? 0 : (int)(color.red - (color.red * fade / 256));
+    color.green = (color.green <= 10) ? 0 : (int)(color.green - (color.green * fade / 256));
+    color.blue = (color.blue <= 10) ? 0 : (int)(color.blue - (color.blue * fade / 256));
     node_neopixel_set(pixel, color.red, color.green, color.blue);
 }
 
-void meteor_effect() {
+void meteor_effect() { 
     int num_pixels = mgos_sys_config_get_nodes_neopixel_pixels();
     int meteor_size = mgos_sys_config_get_effects_meteor_size();
     bool random_decay = mgos_sys_config_get_effects_meteor_random();
     int trail_decay = mgos_sys_config_get_effects_meteor_trail();
-    
-    node_neopixel_turn_off();
+    int color = mgos_sys_config_get_strip_color();
+    rgb_color rgb = get_rgb_color(color);
+
+    if (s_meteor_effect_counter == 0) {
+        node_neopixel_turn_off();
+    }
 
     for(int j = 0; j < num_pixels; j++) {
-        if(!(random_decay) || (int) mgos_rand_range(0, 5) > 5) {
+        if(!random_decay || (int) mgos_rand_range(0, 9) > 4) {
             fade_to_black(j, trail_decay);
         }
     }
     for(int j = 0; j < meteor_size; j++) {
         int p = s_meteor_effect_counter - j;
         if((p < num_pixels) && (p >= 0)) {
-            node_neopixel_set(p, 0xFF, 0xFF, 0xFF);
+            node_neopixel_set(p, rgb.red, rgb.green, rgb.blue);
         }
     }
 

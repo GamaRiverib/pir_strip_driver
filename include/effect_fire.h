@@ -29,20 +29,21 @@
 extern "C" {
 #endif
 
+static int heat[30]; // TODO
+
 void fire_effect(void *args) {
     (void) args;
     int cooldown;
     int num_pixels = mgos_sys_config_get_nodes_neopixel_pixels();
-    int heat[num_pixels];
     int cooling = mgos_sys_config_get_effects_fire_cooling();
     int sparking = mgos_sys_config_get_effects_fire_sparking();
 
     for(int i = 0; i < num_pixels; i++) {
         cooldown = (int) mgos_rand_range(0, ((cooling * 10) / num_pixels) + 2);
         if(cooldown > heat[i]) {
-        heat[i] = 0;
+            heat[i] = 0;
         } else {
-        heat[i] = heat[i] - cooldown;
+            heat[i] = heat[i] - cooldown;
         }
     }
 
@@ -62,11 +63,11 @@ void fire_effect(void *args) {
         heatramp <<= 0x02;
         heatramp = heatramp & 0xFF;
         if(t192 > 0x80) {
-        node_neopixel_set(j, 0xFF, 0xFF, heatramp);
+            node_neopixel_set(j, 0xFF, 0xFF, heatramp);
         } else if(t192 > 0x40) {
-        node_neopixel_set(j, 0xFF, heatramp, 0x00);
+            node_neopixel_set(j, 0xFF, heatramp, 0x00);
         } else {
-        node_neopixel_set(j, heatramp, 0x00, 0x00);
+            node_neopixel_set(j, heatramp, 0x00, 0x00);
         }
     }
 

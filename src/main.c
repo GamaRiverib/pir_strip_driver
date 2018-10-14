@@ -316,12 +316,15 @@ static void rpc_set_effect_cb(struct mg_rpc_request_info *ri, const char *args,
 static void rpc_set_next_effect_cb(struct mg_rpc_request_info *ri, const char *args,
                            const char *src, void *user_data) {
   int e = mgos_sys_config_get_strip_effect();
-  e++;
-  if (e >= TOTAL_EFFECTS) {
-    e = 0;
+  if (mgos_sys_config_get_app_mode() == MODE_EFFECT) {
+    e++;
+    if (e >= TOTAL_EFFECTS) {
+      e = 0;
+    }
+    mgos_sys_config_set_strip_effect(e);
+  } else {
+    mgos_sys_config_set_app_mode(MODE_EFFECT);
   }
-  mgos_sys_config_set_strip_effect(e);
-  mgos_sys_config_set_app_mode(MODE_EFFECT);
   start_effect();
   mg_rpc_send_responsef(ri, RPC_SUCCESS_RESPONSE_JSON_FMT);
   (void) args;
@@ -352,7 +355,9 @@ static void rpc_set_color_cb(struct mg_rpc_request_info *ri, const char *args,
   int color = atoi(args);
   LOG(LL_INFO, ("Set color: %d", color & 0xFFFFFF));
   mgos_sys_config_set_strip_color(color & 0xFFFFFF);
-  strip_turn_on();
+  if(mgos_sys_config_get_app_mode() == MODE_OFF) {
+    strip_turn_on();
+  }
   mg_rpc_send_responsef(ri, RPC_SUCCESS_RESPONSE_JSON_FMT);
   (void) args;
   (void) src;
