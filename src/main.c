@@ -21,12 +21,7 @@
 #include "mgos_timers.h"
 #include "mgos_gpio.h"
 #include "mgos_rpc.h"
-#include "mgos_mqtt.h"
-#include "mgos_blynk.h"
 #include "nvk_nodes.h"
-#include "nvk_nodes_dht.h"
-#include "nvk_nodes_pir.h"
-#include "nvk_nodes_photoresistor.h"
 #include "nvk_nodes_neopixel.h"
 #include "effect_default.h"
 #include "effect_strobe.h"
@@ -45,19 +40,12 @@
 #define MODE_OFF 0
 #define MODE_ON 1
 #define MODE_EFFECT 2
-#define MODE_NIGHT 3
-#define MODE_VIGILANCE 4
 
 static mgos_timer_id effect_timer = MGOS_INVALID_TIMER_ID;
-static mgos_timer_id smooth_timer = MGOS_INVALID_TIMER_ID;
-static mgos_timer_id alert_timer = MGOS_INVALID_TIMER_ID;
-static float last_motion_time = 0;
-static int smooth_brightness = 0;
 
 static neopixel_effect_data s_neopixel_effect_data = { 0 };
 
-const char MOTION_ALERT_JSON_FMT[] = "{uptime:%f}";
-const char RPC_DEVICE_STATE_JSON_FMT[] = "{id:\"%s\",mode:%d,temp:%d,humd:%d,lum:%d}";
+const char RPC_DEVICE_STATE_JSON_FMT[] = "{id:\"%s\",mode:%d}";
 const char RPC_SUCCESS_RESPONSE_JSON_FMT[] = "{success:true}";
 const char EFFECTS_LIST[][16] = {
   "default",
@@ -80,14 +68,6 @@ static void clear_timers() {
     mgos_clear_timer(effect_timer);
     effect_timer = MGOS_INVALID_TIMER_ID;
   }
-  if(smooth_timer != MGOS_INVALID_TIMER_ID) {
-    mgos_clear_timer(smooth_timer);
-    smooth_timer = MGOS_INVALID_TIMER_ID;
-  }
-  if(alert_timer != MGOS_INVALID_TIMER_ID) {
-    mgos_clear_timer(alert_timer);
-    alert_timer = MGOS_INVALID_TIMER_ID;
-  }
 }
 
 static void strip_turn_off() {
@@ -107,10 +87,6 @@ static void strip_turn_on() {
   node_neopixel_turn_on(c);
   mgos_sys_config_set_app_mode(MODE_ON);
   LOG(LL_INFO, ("Led Strip Turn ON"));
-}
-
-static bool is_dark() {
-  return node_photoresistor_get_luminosity() <= mgos_sys_config_get_pir_threshold();
 }
 
 static void start_effect() {
@@ -170,115 +146,16 @@ static void start_effect() {
   LOG(LL_INFO, ("Starting %s effect...", EFFECTS_LIST[effect]));
 }
 
-static void start_night_light() {
-  clear_timers();
-  node_neopixel_turn_off();
-  mgos_sys_config_set_app_mode(MODE_NIGHT);
-  LOG(LL_INFO, ("Starting night light"));
-}
-
-static void start_vigilance() {
-  clear_timers();
-  int speed = mgos_sys_config_get_strip_speed() / 2;
-  s_neopixel_effect_data.color = mgos_sys_config_get_strip_color();
-  effect_timer = mgos_set_timer(speed, MGOS_TIMER_REPEAT, cylon_effect, &s_neopixel_effect_data);
-  mgos_sys_config_set_app_mode(MODE_VIGILANCE);
-}
-
-/*
-static void bled_timer_cb(void *args) {
-  mgos_gpio_toggle(mgos_sys_config_get_pins_bled());
-  (void) args;
-}
-*/
-
-static void smooth_turn_off() {
-  smooth_brightness -= 50;
-  if(smooth_brightness > 0) {
-    node_neopixel_set_brightness(smooth_brightness);
-  } else {
-    smooth_brightness = 0;
-    node_neopixel_set_brightness(0);
-    clear_timers();
-  }
-}
-
-static void check_last_motion_time() {
-  int current_time = mgos_uptime();
-  if (current_time > last_motion_time) {
-    int diff = mgos_uptime() - last_motion_time;
-    if (diff < mgos_sys_config_get_pir_keep()) {
-      int wait = (mgos_sys_config_get_pir_keep() - diff) * 1000;
-      mgos_set_timer(wait, false, check_last_motion_time, NULL);
-    } else {
-      clear_timers();
-      smooth_timer = mgos_set_timer(1000, MGOS_TIMER_REPEAT, smooth_turn_off, NULL);
-    }
-  } else {
-    mgos_set_timer(mgos_sys_config_get_pir_keep() * 1000, false, check_last_motion_time, NULL);
-  }
-}
-
-static void smooth_turn_on() {
-  smooth_brightness += 50;
-  if(smooth_brightness <= 250) {
-    node_neopixel_set_brightness(smooth_brightness);
-  } else {
-    smooth_brightness = 250;
-    node_neopixel_set_brightness(255);
-    clear_timers();
-    int wait = mgos_sys_config_get_pir_keep() * 1000;
-    mgos_set_timer(wait, false, check_last_motion_time, NULL);
-  }
-}
-
-static void motion_handler() {
-  if (mgos_uptime() - last_motion_time > 4) {
-    last_motion_time = mgos_uptime();
-    LOG(LL_INFO, ("[%f] Motion detected", last_motion_time));
-    switch(mgos_sys_config_get_app_mode()) {
-      case MODE_NIGHT:
-        if(is_dark() && smooth_timer == MGOS_INVALID_TIMER_ID) {
-          smooth_turn_on();
-          smooth_timer = mgos_set_timer(1000, MGOS_TIMER_REPEAT, smooth_turn_on, NULL);
-        }
-        break;
-      case MODE_VIGILANCE:
-        if(alert_timer == MGOS_INVALID_TIMER_ID) {
-          clear_timers();
-          s_neopixel_effect_data.color = mgos_sys_config_get_strip_color();
-          effect_timer = mgos_set_timer(100, MGOS_TIMER_REPEAT, strobe_effect, &s_neopixel_effect_data);
-          alert_timer = mgos_set_timer(15000, false, start_vigilance, NULL);
-          mgos_mqtt_pubf("alert/motion", 1, false, MOTION_ALERT_JSON_FMT, mgos_uptime());
-        }
-        break;
-    }
-  }
-}
-
-void node_pir_toggle_handler(int value, void *user_data) {
-    if(mgos_sys_config_get_pir_indicator()) {
-      mgos_gpio_write(mgos_sys_config_get_pins_led(), value);
-    }
-    if(value) {
-      motion_handler();
-    }
-    (void) user_data;
-}
-
 static void rpc_get_device_state(struct mg_rpc_request_info *ri, const char *args,
                            const char *src, void *user_data) {
   const char* id = mgos_sys_config_get_device_id();
   int mode = mgos_sys_config_get_app_mode();
-  int temp = (int) node_dht_get_temperature();
-  int humd = (int) node_dht_get_humidity();
-  int lumi = node_photoresistor_get_luminosity();
-  mg_rpc_send_responsef(ri, RPC_DEVICE_STATE_JSON_FMT, id, mode, temp, humd, lumi);
+  mg_rpc_send_responsef(ri, RPC_DEVICE_STATE_JSON_FMT, id, mode);
   (void) args;
   (void) src;
   (void) user_data;
 }
-
+  
 static void rpc_turn_on_cb(struct mg_rpc_request_info *ri, const char *args,
                            const char *src, void *user_data) {
   strip_turn_on();
@@ -332,24 +209,6 @@ static void rpc_set_next_effect_cb(struct mg_rpc_request_info *ri, const char *a
   (void) user_data;
 }
 
-static void rpc_set_night_light_cb(struct mg_rpc_request_info *ri, const char *args,
-                           const char *src, void *user_data) {
-  start_night_light();
-  mg_rpc_send_responsef(ri, RPC_SUCCESS_RESPONSE_JSON_FMT);
-  (void) args;
-  (void) src;
-  (void) user_data;
-}
-
-static void rpc_set_vigilance_cb(struct mg_rpc_request_info *ri, const char *args,
-                           const char *src, void *user_data) {
-  start_vigilance();
-  mg_rpc_send_responsef(ri, RPC_SUCCESS_RESPONSE_JSON_FMT);
-  (void) args;
-  (void) src;
-  (void) user_data;
-}
-
 static void rpc_set_color_cb(struct mg_rpc_request_info *ri, const char *args,
                            const char *src, void *user_data) {
   int color = atoi(args);
@@ -364,71 +223,13 @@ static void rpc_set_color_cb(struct mg_rpc_request_info *ri, const char *args,
   (void) user_data;
 }
 
-static void custom_blynk_handler(struct mg_connection *c, const char *cmd, int pin, int val, int id, void *user_data) {
-  LOG(LL_INFO, ("custom_blynk_handler"));
-  if (strcmp(cmd, "vr") == 0) {
-    /*if (pin == s_read_virtual_pin) {
-      blynk_virtual_write(c, id, s_read_virtual_pin,
-                          (float) mgos_get_free_heap_size() / 1024);
-    }*/
-    switch(pin) {
-      case 0:
-        LOG(LL_INFO, ("Blynk::vr::Temp"));
-        break;
-      case 1:
-        LOG(LL_INFO, ("Blynk::vr::Humd"));
-        break;
-      case 2:
-        LOG(LL_INFO, ("Blynk::vr::Lum"));
-        break;
-      default:
-        LOG(LL_INFO, ("Bad virtual read pin"));
-    }
-  } else if (strcmp(cmd, "vw") == 0) {
-    /*if (pin == s_write_virtual_pin) {
-      mgos_gpio_set_mode(s_led_pin, MGOS_GPIO_MODE_OUTPUT);
-      mgos_gpio_write(s_led_pin, val);
-    }*/
-    switch(pin) {
-      case 3:
-        LOG(LL_INFO, ("Blynk::vw::Led"));
-        break;
-      case 4:
-        LOG(LL_INFO, ("Blynk::vw::Mode"));
-        break;
-      case 5:
-        LOG(LL_INFO, ("Blynk::vw::OnOff"));
-        break;
-      case 6:
-        LOG(LL_INFO, ("Blynk::vw::Effect"));
-        break;
-      case 7:
-        LOG(LL_INFO, ("Blynk::vw::Color"));
-        break;
-      default:
-        LOG(LL_INFO, ("Bad virtual write pin"));
-    }
-  }
-  (void) c;
-  (void) val;
-  (void) id;
-  (void) user_data;
-}
-
 enum mgos_app_init_result mgos_app_init(void) {
 
   if(mgos_nodes_init()) {
-    node_pir_set_pir_toggle_handler(node_pir_toggle_handler);
+    LOG(LL_INFO, ("Initializing nodes done!"));
   } else {
     LOG(LL_ERROR, ("Error initializing the nodes"));
   }
-
-  // Configure Built in LED
-  /*mgos_gpio_set_mode(mgos_sys_config_get_pins_bled(), MGOS_GPIO_MODE_OUTPUT);
-  mgos_set_timer(1000, MGOS_TIMER_REPEAT, bled_timer_cb, NULL);*/
-
-  // Configure LED indicator for PIR sensor 
-  mgos_gpio_set_mode(mgos_sys_config_get_pins_led(), MGOS_GPIO_MODE_OUTPUT);
 
   // Configure RPC interface
   mgos_rpc_add_handler("Driver.State", rpc_get_device_state, NULL);
@@ -436,17 +237,7 @@ enum mgos_app_init_result mgos_app_init(void) {
   mgos_rpc_add_handler("Driver.Off", rpc_turn_off_cb, NULL);
   mgos_rpc_add_handler("Driver.Effect", rpc_set_effect_cb, NULL);
   mgos_rpc_add_handler("Driver.Next", rpc_set_next_effect_cb, NULL);
-  mgos_rpc_add_handler("Driver.Night", rpc_set_night_light_cb, NULL);
-  mgos_rpc_add_handler("Driver.Vigilance", rpc_set_vigilance_cb, NULL);
   mgos_rpc_add_handler("Driver.Color", rpc_set_color_cb, NULL);
-
-  blynk_set_handler(custom_blynk_handler, NULL);
-
-  /*if (mgos_blynk_init()) {
-    blynk_set_handler(custom_blynk_handler, NULL);
-  } else {
-    LOG(LL_ERROR, ("Failed to init Blynk"));
-  }*/
 
   int mode = mgos_sys_config_get_app_mode();
   switch(mode) {
@@ -458,12 +249,6 @@ enum mgos_app_init_result mgos_app_init(void) {
       break;
     case MODE_EFFECT: 
       start_effect();
-      break;
-    case MODE_NIGHT:
-      start_night_light();
-      break;
-    case MODE_VIGILANCE:
-      start_vigilance();
       break;
     default:
       LOG(LL_INFO, ("Bad mode %d", mode));

@@ -49,7 +49,7 @@ void rbg_loop_effect(void *args) {
         s_rgb_loop_effect_counter--;
         if(s_rgb_loop_effect_dir)
         {
-        s_rbg_loop_effect_iteration++;
+            s_rbg_loop_effect_iteration++;
         }
     }
     int color = 0xFF0000;

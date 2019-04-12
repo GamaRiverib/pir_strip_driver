@@ -1,5 +1,5 @@
 author: José Gamaliel Rivera Ibarra <jgrivera@novutek.com>
-description: Led Strip WS2812 Driver with PIR sensor
+description: Led Strip WS2812 Driver
 version: 1.0
 
 libs_version: ${mos.version}
@@ -13,86 +13,19 @@ includes:
 filesystem:
   - fs
 config_schema:
-  # - ["mqtt.server", "10.10.0.246:1883"]
-  - ["mqtt.server", "192.168.0.117:1883"]
-  - ["mqtt.enable", true]
-
-  # - ["blynk.server", "192.168.137.1:8442"]
-  # - ["blynk.auth", "61e3a70da59542cc92eee4247e06167a"]
-  - ["blynk.server", "192.168.0.117:8442"]
-  - ["blynk.auth", ""]
-  - ["blynk.enable", true]
-
-  - ["sntp.enable", true]
-  - ["sntp.server", "time.google.com"]
-
+  - ["wifi.ap.ssid", "LedStripDriver_??????"]
+  - ["wifi.ap.pass", "ws2812b0"]
+  
   # Nodes (Drivers wrapper)
   - ["nodes", "o", {title: "Nodes wrappers definition"}]
-
-  - ["nodes.dht", "o", {title: "DHT Node wrapper definition"}]
-  - ["nodes.dht.enable", "b", true, {title: "DHT Node enabled"}]
-  - ["nodes.dht.type", "i", 11, {title: "DHT type"}]
-  - ["nodes.dht.pin", "i", 13, {title: "DHT sensor pin"}]
-
-  - ["nodes.dht.props", "o", {title: "DHT driver sensor properties"}]
-  - ["nodes.dht.props.temp", "o", {title: "DHT temperature property definition"}]
-  - ["nodes.dht.props.temp.range", "o", {title: "DHT temperature range"}]
-  - ["nodes.dht.props.temp.range.min", "i", 22, {title: "DHT temperature min range value"}]
-  - ["nodes.dht.props.temp.range.max", "i", 26, {title: "DHT temperature max range value"}]
-  - ["nodes.dht.props.humd", "o", {title: "DHT humidity property definition"}]
-  - ["nodes.dht.props.humd.range", "o", {title: "DHT humidity range"}]
-  - ["nodes.dht.props.humd.range.min", "i", 45, {title: "DHT humidity min range value"}]
-  - ["nodes.dht.props.humd.range.max", "i", 55, {title: "DHT humidity max range value"}]
-
-  - ["nodes.dht.sampling", "o", {title: "DHT Node sampling config"}]
-  - ["nodes.dht.sampling.interval", "i", 1000, {title: "DHT Node sampling interval"}]
-
-  - ["nodes.dht.tele", "o", {title: "DHT Node telemetry config"}]
-  - ["nodes.dht.tele.interval", "i", 30000, {title: "DHT Node telemetry interval"}]
-  - ["nodes.dht.tele.topic", "s", "weather", {title: "DHT Node MQTT topic for telemetry"}]
-
-  - ["nodes.pir", "o", {title: "PIR Node wrapper definition"}] #AM312 PIR sensor
-  - ["nodes.pir.enable", "b", true, {title: "PIR Node enabled"}]
-  - ["nodes.pir.pin", "i", 14, {title: "PIR sensor pin"}]
-
-  - ["nodes.pir.sampling", "o", {title: "PIR Node sampling config"}]
-  - ["nodes.pir.sampling.interval", "i", 500, {title: "PIR Node sampling interval"}]
-
-  - ["nodes.pir.stat", "o", {title: "PIR State config"}]
-  - ["nodes.pir.stat.topic", "s", "pir", {title: "PIR Node MQTT topic for state"}]
-
-  - ["nodes.photoresistor", "o", {title: "Photoresistor Node wrapper definition"}]
-  - ["nodes.photoresistor.enable", "b", true, {title: "Photoresistor Node enabled"}]
-  - ["nodes.photoresistor.pin", "i", 0, {title: "Photoresistor sensor pin"}]
-
-  - ["nodes.photoresistor.props", "o", {title: "Photoresistor driver sensor properties"}]
-  - ["nodes.photoresistor.props.lumi", "o", {title: "Photoresistor luminosity property definition"}]
-  - ["nodes.photoresistor.props.lumi.range", "o", {title: "Photoresistor luminosity range"}]
-  - ["nodes.photoresistor.props.lumi.range.min", "i", 120, {title: "Photoresistor luminosity min range value"}]
-  - ["nodes.photoresistor.props.lumi.range.max", "i", 1024, {title: "Photoresistor luminosity max range value"}]
-  
-  - ["nodes.photoresistor.sampling", "o", {title: "Photoresistor Node sampling config"}]
-  - ["nodes.photoresistor.sampling.interval", "i", 5000, {title: "Photoresistor Node sampling interval"}]
-
-  - ["nodes.photoresistor.tele", "o", {title: "Photoresistor Node telemetry config"}]
-  - ["nodes.photoresistor.tele.interval", "i", 60000, {title: "Photoresistor Node telemetry interval"}]
-  - ["nodes.photoresistor.tele.topic", "s", "luminosity", {title: "Photoresistor Node MQTT topic for telemetry"}]
 
   - ["nodes.neopixel", "o", {title: "Neopixel Node wrapper definition"}]
   - ["nodes.neopixel.enable", "b", true, {title: "Neopixel Node enabled"}]
   - ["nodes.neopixel.pin", "i", 2, {title: "Neopixel LedStrip pin"}]
   - ["nodes.neopixel.pixels", "i", 30, {title: "Neopixel LedStrip num pixels"}]
 
-  - ["pins", "o", {title: "Pins configuration"}]
-  - ["pins.led", "i", 12, {title: "PIR led pin"}]
-
   - ["app", "o", {title: "App custom settings"}]
-  - ["app.mode", "i", 0, {title: "Driver operational mode (0 - 4)"}]
-
-  - ["pir", "o", {title: "PIR motion sensor configuration"}]
-  - ["pir.indicator", "b", true, {title: "Pir led indicator"}]
-  - ["pir.threshold", "i", 250, {title: "Luminosity threshold"}]
-  - ["pir.keep", "i", 30, {title: "Time to keep turn on (seconds)"}]
+  - ["app.mode", "i", 0, {title: "Driver operational mode (0 - 2)"}]
 
   - ["strip", "o", {title: "Led Strip WS2812 configuration"}]
   - ["strip.color", "i", 0x881F78, {title: "Led Strip color"}]
@@ -117,33 +50,18 @@ libs:
   - origin: https://github.com/mongoose-os-libs/rpc-service-fs
   - origin: https://github.com/mongoose-os-libs/rpc-uart
   - origin: https://github.com/mongoose-os-libs/spi
-  - origin: https://github.com/mongoose-os-libs/adc
 
   - origin: https://github.com/mongoose-os-libs/http-server
   - origin: https://github.com/mongoose-os-libs/ota-http-server
   - origin: https://github.com/mongoose-os-libs/pwm
-  # - origin: https://github.com/mongoose-os-libs/rpc-loopback
-  - origin: https://github.com/mongoose-os-libs/rpc-mqtt
-  # - origin: https://github.com/mongoose-os-libs/rpc-service-gpio
-  # - origin: https://github.com/mongoose-os-libs/rpc-service-i2c
+  - origin: https://github.com/mongoose-os-libs/rpc-service-gpio
+  - origin: https://github.com/mongoose-os-libs/rpc-service-i2c
   - origin: https://github.com/mongoose-os-libs/rpc-service-ota
   - origin: https://github.com/mongoose-os-libs/rpc-service-wifi
   - origin: https://github.com/mongoose-os-libs/vfs-dev-spi-flash
   - origin: https://github.com/mongoose-os-libs/wifi
-  - origin: https://github.com/mongoose-os-libs/sntp
-  
-  # - origin: https://github.com/mongoose-os-libs/core
-  # - origin: https://github.com/mongoose-os-libs/dash
-  # - origin: https://github.com/mongoose-os-libs/shadow
-  # - origin: https://github.com/mongoose-os-libs/sntp
 
-  - origin: https://github.com/mongoose-os-libs/dht
   - origin: https://github.com/mongoose-os-libs/neopixel
-  # - origin: https://github.com/mongoose-os-libs/mjs
-  - origin: https://github.com/mongoose-os-libs/blynk
-
-cdefs:
-  MG_ENABLE_SNTP: 1
 
 tags:
   - c
